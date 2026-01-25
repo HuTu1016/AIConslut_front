@@ -10,7 +10,7 @@
         <view class="header-top">
           <view class="location">
             <text class="icon">📍</text>
-            <text class="text">北京市</text>
+            <text class="text">{{ cityName || '定位中...' }}</text>
             <text class="arrow">▼</text>
           </view>
           <view class="notification">
@@ -97,7 +97,7 @@
             @click="goDoctorDetail(doctor)"
           >
             <view class="card-left">
-              <image class="avatar" :src="doctor.avatarUrl || '/static/default-avatar.png'" mode="aspectFill"></image>
+              <image class="avatar" :src="$resolveImage(doctor.avatarUrl)" mode="aspectFill"></image>
               <view class="rating-badge">
                 <text class="star">★</text>
                 <text class="score">{{ doctor.rating || '5.0' }}</text>
@@ -151,7 +151,7 @@
 
 <script>
 import { checkLogin } from '@/utils/store.js'
-import { apiGetDepartments, apiGetDoctors } from '@/utils/request.js'
+import { apiGetDepartments, apiGetDoctors, apiGetLocation } from '@/utils/request.js'
 
 // 科室图标映射
 const DEPT_ICONS = {
@@ -169,10 +169,12 @@ export default {
   data() {
     return {
       departments: [],
-      doctors: []
+      doctors: [],
+      cityName: '定位中...'
     }
   },
   onLoad() {
+    this.getLocation()
     this.loadDepartments()
     this.loadDoctors()
   },
@@ -260,6 +262,38 @@ export default {
       if (!checkLogin()) return
       uni.navigateTo({
         url: `/pages/appointment/book?doctorId=${doctor.id}`
+      })
+    },
+
+
+    // 获取定位
+    getLocation() {
+      const that = this
+      uni.getLocation({
+        type: 'gcj02',
+        success: function (res) {
+          console.log('当前位置的经度：' + res.longitude)
+          console.log('当前位置的纬度：' + res.latitude)
+          
+          apiGetLocation(res.latitude, res.longitude).then(res => {
+             if(res.data) {
+               that.cityName = res.data
+             } else {
+                that.cityName = '未知'
+             }
+          }).catch(err => {
+             console.error('获取城市失败', err)
+             that.cityName = '未知'
+          })
+        },
+        fail: function (err) {
+            console.error('获取定位失败', err)
+            that.cityName = '定位失败'
+            uni.showToast({
+                title: '请开启定位权限',
+                icon: 'none'
+            })
+        }
       })
     }
   }

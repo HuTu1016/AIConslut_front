@@ -169,6 +169,18 @@ export function apiGetDepartments() {
 }
 
 /**
+ * 获取定位城市
+ * @param {number} latitude 纬度
+ * @param {number} longitude 经度
+ */
+export function apiGetLocation(latitude, longitude) {
+  return request({
+    url: `/api/v1/public/location?latitude=${latitude}&longitude=${longitude}`,
+    method: 'GET'
+  })
+}
+
+/**
  * 按科室查询医生列表
  * @param {number} departmentId 科室ID（可选，不传则查全部）
  */
