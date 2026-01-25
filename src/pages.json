@@ -1,0 +1,92 @@
+{
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "AI智慧问诊",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationBarTitleText": "登录",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/profile/profile",
+			"style": {
+				"navigationBarTitleText": "个人中心",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/department/department",
+			"style": {
+				"navigationBarTitleText": "科室列表"
+			}
+		},
+		{
+			"path": "pages/doctor/list",
+			"style": {
+				"navigationBarTitleText": "医生列表"
+			}
+		},
+		{
+			"path": "pages/doctor/detail",
+			"style": {
+				"navigationBarTitleText": "医生详情"
+			}
+		},
+		{
+			"path": "pages/appointment/book",
+			"style": {
+				"navigationBarTitleText": "预约挂号"
+			}
+		},
+		{
+			"path": "pages/appointment/list",
+			"style": {
+				"navigationBarTitleText": "我的预约"
+			}
+		},
+		{
+			"path": "pages/appointment/detail",
+			"style": {
+				"navigationBarTitleText": "预约详情"
+			}
+		},
+		{
+			"path": "pages/payment/result",
+			"style": {
+				"navigationBarTitleText": "支付结果"
+			}
+		},
+		{
+			"path": "pages/consult/chat",
+			"style": {
+				"navigationBarTitleText": "在线问诊"
+			}
+		},
+		{
+			"path": "pages/consult/record",
+			"style": {
+				"navigationBarTitleText": "问诊病历"
+			}
+		},
+		{
+			"path": "pages/ai/chat",
+			"style": {
+				"navigationBarTitleText": "AI问诊",
+				"navigationBarBackgroundColor": "#ffffff"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "AI智慧问诊",
+		"navigationBarBackgroundColor": "#ffffff",
+		"backgroundColor": "#F5F7FA"
+	}
+}
