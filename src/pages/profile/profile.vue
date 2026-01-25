@@ -80,7 +80,7 @@
 </template>
 
 <script>
-import { apiGetUserInfo, apiGetUnreadCount } from '@/utils/request.js'
+import { apiGetUserInfo, apiGetUnreadCount, apiUploadAvatar } from '@/utils/request.js'
 import { getUserInfo, isLoggedIn, clearLoginInfo } from '@/utils/store.js'
 
 export default {
@@ -165,9 +165,32 @@ export default {
     chooseAvatar() {
       uni.chooseImage({
         count: 1,
-        success: (res) => {
-          this.userInfo.avatarUrl = res.tempFilePaths[0]
-          // TODO: 上传头像到服务器
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera'],
+        success: async (res) => {
+          const tempFilePath = res.tempFilePaths[0]
+          uni.showLoading({ title: '上传中...' })
+          try {
+            const uploadRes = await apiUploadAvatar(tempFilePath)
+            if (uploadRes.data && uploadRes.data.avatarUrl) {
+              this.userInfo.avatarUrl = uploadRes.data.avatarUrl
+              // 更新本地存储的用户信息
+              const storedInfo = uni.getStorageSync('userInfo') || {}
+              storedInfo.avatarUrl = uploadRes.data.avatarUrl
+              uni.setStorageSync('userInfo', storedInfo)
+              uni.showToast({ title: '头像更新成功', icon: 'success' })
+            } else {
+              // 如果后端没有返回头像URL，先用临时路径显示
+              this.userInfo.avatarUrl = tempFilePath
+              uni.showToast({ title: '头像已更新', icon: 'success' })
+            }
+          } catch (err) {
+            console.error('上传头像失败:', err)
+            // 上传失败时仍然使用临时路径显示，体验更好
+            this.userInfo.avatarUrl = tempFilePath
+          } finally {
+            uni.hideLoading()
+          }
         }
       })
     },

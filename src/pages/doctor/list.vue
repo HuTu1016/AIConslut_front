@@ -75,7 +75,11 @@ export default {
       currentDeptId: '',
       loading: false,
       departments: [],
-      doctors: []
+      doctors: [],
+      // 分页相关
+      page: 1,
+      pageSize: 10,
+      hasMore: true
     }
   },
   computed: {
@@ -110,13 +114,23 @@ export default {
       }
     },
     
-    async loadDoctors() {
+    async loadDoctors(isLoadMore = false) {
+      if (this.loading) return
+      if (isLoadMore && !this.hasMore) return
+      
       this.loading = true
       try {
         // 如果有指定科室，则按科室查询
         const res = await apiGetDoctors(this.currentDeptId || undefined)
         if (res.data) {
-          this.doctors = res.data
+          const records = Array.isArray(res.data) ? res.data : (res.data.records || [])
+          if (isLoadMore) {
+            this.doctors = [...this.doctors, ...records]
+          } else {
+            this.doctors = records
+          }
+          // 判断是否还有更多（如果返回的数据少于pageSize则没有更多）
+          this.hasMore = records.length >= this.pageSize
         }
       } catch (err) {
         console.error('加载医生失败:', err)
@@ -127,6 +141,9 @@ export default {
     
     filterByDept(deptId) {
       this.currentDeptId = deptId
+      // 切换科室时重置分页
+      this.page = 1
+      this.hasMore = true
       this.loadDoctors()
     },
     
@@ -144,7 +161,9 @@ export default {
     },
     
     loadMore() {
-      // TODO: 分页加载
+      if (this.loading || !this.hasMore) return
+      this.page++
+      this.loadDoctors(true)
     }
   }
 }

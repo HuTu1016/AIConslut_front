@@ -99,7 +99,11 @@ export default {
         { label: '已完成', value: '30' },
         { label: '已取消', value: '40' }
       ],
-      list: []
+      list: [],
+      // 分页相关
+      page: 1,
+      pageSize: 10,
+      hasMore: true
     }
   },
   computed: {
@@ -117,17 +121,30 @@ export default {
     this.loadData()
   },
   methods: {
-    async loadData() {
+    async loadData(isLoadMore = false) {
+      if (this.loading) return
+      if (isLoadMore && !this.hasMore) return
+      
       this.loading = true
       try {
-        // 构建请求参数，只有当status有值时才传递
-        const params = {}
+        const params = {
+          page: this.page,
+          size: this.pageSize
+        }
         if (this.currentTab !== '' && this.currentTab !== undefined && this.currentTab !== null) {
           params.status = this.currentTab
         }
         const res = await apiGetAppointments(params)
         if (res.data) {
-          this.list = res.data.records || res.data.list || res.data || []
+          const records = res.data.records || res.data.list || res.data || []
+          if (isLoadMore) {
+            this.list = [...this.list, ...records]
+          } else {
+            this.list = records
+          }
+          // 判断是否还有更多数据
+          const total = res.data.total || 0
+          this.hasMore = this.list.length < total
         }
       } catch (err) {
         console.error('加载预约列表失败:', err)
@@ -138,6 +155,10 @@ export default {
     
     switchTab(value) {
       this.currentTab = value
+      // 切换tab时重置分页
+      this.page = 1
+      this.hasMore = true
+      this.loadData()
     },
     
     getStatusText(status) {
@@ -213,7 +234,9 @@ export default {
     },
     
     loadMore() {
-      // TODO: 分页加载
+      if (this.loading || !this.hasMore) return
+      this.page++
+      this.loadData(true)
     }
   }
 }

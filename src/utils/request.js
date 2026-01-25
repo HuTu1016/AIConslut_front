@@ -102,6 +102,60 @@ function handleUnauthorized() {
   })
 }
 
+// API基础地址（用于文件上传）
+const UPLOAD_BASE_URL = 'http://192.168.134.91:8080'
+
+/**
+ * 封装uni.uploadFile为Promise
+ * @param {string} filePath 文件临时路径
+ * @param {string} url 上传接口地址
+ * @param {string} name 文件字段名
+ * @returns {Promise}
+ */
+export function uploadFile(filePath, url, name = 'file') {
+  return new Promise((resolve, reject) => {
+    const token = uni.getStorageSync('token')
+
+    uni.uploadFile({
+      url: UPLOAD_BASE_URL + url,
+      filePath: filePath,
+      name: name,
+      header: {
+        'Authorization': token ? `Bearer ${token}` : ''
+      },
+      success: (res) => {
+        if (res.statusCode === 200) {
+          try {
+            const data = JSON.parse(res.data)
+            if (data.code === 0 || data.code === 200) {
+              resolve(data)
+            } else {
+              uni.showToast({ title: data.message || '上传失败', icon: 'none' })
+              reject(data)
+            }
+          } catch (e) {
+            reject({ code: -1, message: '解析响应失败' })
+          }
+        } else {
+          reject({ code: res.statusCode, message: '上传失败' })
+        }
+      },
+      fail: (err) => {
+        uni.showToast({ title: '上传失败', icon: 'none' })
+        reject({ code: -1, message: err.errMsg || '上传失败' })
+      }
+    })
+  })
+}
+
+/**
+ * 上传用户头像
+ * @param {string} filePath 图片临时路径
+ */
+export function apiUploadAvatar(filePath) {
+  return uploadFile(filePath, '/api/v1/user/avatar', 'avatar')
+}
+
 // ==================== 公共接口（无需登录） ====================
 
 /**
