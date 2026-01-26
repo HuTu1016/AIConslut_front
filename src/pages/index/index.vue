@@ -60,7 +60,7 @@
           <text class="title">常用科室</text>
           <view class="more" @click="goDepartment">
             <text>全部</text>
-            <text class="arrow">></text>
+            <text class="arrow">›</text>
           </view>
         </view>
         <scroll-view scroll-x class="dept-scroll" :show-scrollbar="false">
@@ -86,7 +86,7 @@
           <text class="title">名医推荐</text>
           <view class="more" @click="goDoctorList({})">
             <text>更多</text>
-            <text class="arrow">></text>
+            <text class="arrow">›</text>
           </view>
         </view>
         <view class="doctor-list">
@@ -125,31 +125,17 @@
       <view style="height: 120rpx;"></view>
     </view>
     
-    <!-- 底部固定导航栏 -->
-    <view class="custom-tab-bar">
-      <view class="tab-item" @click="goHome">
-        <view class="icon-box">
-          <text class="emoji">🏠</text>
-        </view>
-        <text class="label">首页</text>
-      </view>
-      <view class="tab-item center-item" @click="goAiConsult">
-        <view class="icon-circle">
-          <image class="ai-icon" src="/static/tabbar/ai.png" mode="aspectFit"></image>
-        </view>
-        <text class="label">AI 问诊</text>
-      </view>
-      <view class="tab-item" @click="goProfile">
-        <view class="icon-box">
-          <text class="emoji">👤</text>
-        </view>
-        <text class="label">个人中心</text>
-      </view>
-    </view>
+    <!-- 底部导航栏 -->
+    <TabBar currentTab="home" />
+    
+    <!-- 全局悬浮球 -->
+    <FloatingAI />
   </view>
 </template>
 
 <script>
+import TabBar from '@/components/TabBar/TabBar.vue'
+import FloatingAI from '@/components/FloatingAI/FloatingAI.vue'
 import { checkLogin } from '@/utils/store.js'
 import { apiGetDepartments, apiGetDoctors, apiGetLocation } from '@/utils/request.js'
 
@@ -166,6 +152,10 @@ const DEPT_ICONS = {
 }
 
 export default {
+  components: {
+    TabBar,
+    FloatingAI
+  },
   data() {
     return {
       departments: [],
@@ -232,12 +222,6 @@ export default {
       })
     },
     
-    goProfile() {
-      uni.navigateTo({
-        url: '/pages/profile/profile'
-      })
-    },
-    
     goDoctorList(dept) {
       uni.navigateTo({
         url: `/pages/doctor/list?deptId=${dept.id || ''}&deptName=${dept.name || ''}`
@@ -247,14 +231,6 @@ export default {
     goDoctorDetail(doctor) {
       uni.navigateTo({
         url: `/pages/doctor/detail?id=${doctor.id}`
-      })
-    },
-    
-    goHome() {
-      // Just verify we are at top or refresh
-      uni.pageScrollTo({
-        scrollTop: 0,
-        duration: 300
       })
     },
     
@@ -673,6 +649,7 @@ export default {
         display: -webkit-box;
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 2;
+        line-clamp: 2;
         overflow: hidden;
         margin-bottom: 16rpx;
       }
@@ -701,73 +678,6 @@ export default {
           font-size: 24rpx;
           border-radius: 28rpx;
         }
-      }
-    }
-  }
-}
-/* Custom Tab Bar */
-.custom-tab-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 110rpx;
-  background: #fff;
-  display: flex;
-  justify-content: space-around;
-  align-items: flex-start; /* Align top to handle center button pop */
-  padding-top: 10rpx;
-  padding-bottom: calc(10rpx + constant(safe-area-inset-bottom));
-  padding-bottom: calc(10rpx + env(safe-area-inset-bottom));
-  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05);
-  z-index: 100;
-  
-  .tab-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 120rpx;
-    
-    .icon-box {
-      font-size: 44rpx;
-      color: #86909C;
-      margin-bottom: 4rpx;
-    }
-    
-    .label {
-      font-size: 20rpx;
-      color: #86909C;
-    }
-    
-    &.center-item {
-      position: relative;
-      top: -40rpx; /* Pop out effect */
-      
-      .icon-circle {
-        width: 100rpx;
-        height: 100rpx;
-        background: linear-gradient(135deg, #4B6EF2 0%, #2D54EA 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 8rpx 24rpx rgba(75, 110, 242, 0.4);
-        margin-bottom: 8rpx;
-        
-        .emoji {
-          font-size: 56rpx;
-        }
-        
-        .ai-icon {
-          width: 70rpx;
-          height: 70rpx;
-        }
-      }
-      
-      .label {
-        font-weight: bold;
-        color: #1D2129;
       }
     }
   }

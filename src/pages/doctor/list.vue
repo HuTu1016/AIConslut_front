@@ -1,5 +1,8 @@
 <template>
   <view class="doctor-list-container">
+    <!-- 返回按钮 -->
+
+    
     <!-- 筛选栏 -->
     <view class="filter-bar">
       <view 
@@ -283,6 +286,7 @@ export default {
       display: -webkit-box;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
+      line-clamp: 2;
       overflow: hidden;
     }
     

@@ -3,6 +3,19 @@
  * 统一管理baseUrl、请求拦截、响应处理
  */
 
+// ==================== 开发测试配置 ====================
+// 开发模式默认Token（永不过期，用户ID=1）
+// 设置为 true 开启开发模式，会自动设置默认token
+const DEV_MODE = true
+const DEV_TOKEN = 'dev_mock_token_user_1'
+
+// 开发模式下自动设置默认token
+if (DEV_MODE && !uni.getStorageSync('token')) {
+  uni.setStorageSync('token', DEV_TOKEN)
+  console.log('[开发模式] 已设置默认Token:', DEV_TOKEN)
+}
+// ==================== 开发测试配置 END ====================
+
 // API基础地址配置
 const BASE_URL = 'http://192.168.134.91:8080'
 
@@ -244,12 +257,12 @@ export function apiGetUserInfo() {
 }
 
 /**
- * 更新用户信息
+ * 更新用户信息（完善信息）
  * @param {Object} data 用户信息
  */
 export function apiUpdateUserInfo(data) {
   return request({
-    url: '/api/v1/user/update',
+    url: '/api/v1/user/info',
     method: 'PUT',
     data
   })
@@ -358,6 +371,16 @@ export function apiMarkMessagesRead(data) {
     url: '/api/v1/user/consults/messages/read',
     method: 'POST',
     data
+  })
+}
+
+/**
+ * 获取会话列表
+ */
+export function apiGetConsultSessions() {
+  return request({
+    url: '/api/v1/user/consults/sessions',
+    method: 'GET'
   })
 }
 

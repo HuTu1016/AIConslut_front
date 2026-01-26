@@ -1,5 +1,8 @@
 <template>
   <view class="dept-container">
+    <!-- 返回按钮 -->
+
+    
     <!-- 搜索栏 -->
     <view class="search-bar">
       <view class="search-box">
@@ -29,7 +32,7 @@
           <text class="name">{{ dept.name }}</text>
           <text class="desc">{{ dept.description }}</text>
         </view>
-        <text class="arrow">></text>
+        <text class="arrow">›</text>
       </view>
     </view>
     

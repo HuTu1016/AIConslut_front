@@ -1,5 +1,8 @@
 <template>
   <view class="detail-container">
+    <!-- 返回按钮 -->
+
+    
     <!-- 状态卡片 -->
     <view class="status-card" :class="'status-' + appointment.status">
       <text class="status-icon">{{ getStatusIcon(appointment.status) }}</text>

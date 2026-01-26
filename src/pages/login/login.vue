@@ -1,5 +1,8 @@
 <template>
   <view class="login-container">
+    <!-- 返回按钮 -->
+    <back-button></back-button>
+    
     <!-- 顶部装饰 -->
     <view class="header-bg"></view>
     

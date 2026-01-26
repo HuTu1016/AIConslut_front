@@ -1,5 +1,8 @@
 <template>
   <view class="chat-container">
+    <!-- 返回按钮 -->
+
+    
     <!-- 顶部信息 -->
     <view class="chat-header">
       <image class="avatar" :src="doctor.avatarUrl || '/static/default-avatar.png'" mode="aspectFill"></image>

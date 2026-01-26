@@ -4,15 +4,17 @@
     <view class="user-card">
       <view class="card-bg"></view>
       <view class="user-info">
-        <image 
-          class="avatar" 
-          :src="userInfo.avatarUrl || '/static/default-avatar.png'" 
-          mode="aspectFill"
-          @click="isLoggedIn && chooseAvatar()"
-        ></image>
-        <view class="info" v-if="isLoggedIn">
+        <view class="avatar-wrapper" @click="isLoggedIn && chooseAvatar()">
+          <image 
+            class="avatar" 
+            :src="userInfo.avatarUrl || '/static/default-avatar.png'" 
+            mode="aspectFill"
+          ></image>
+          <view class="upload-tip" v-if="!userInfo.avatarUrl">点击上传</view>
+        </view>
+        <view class="info" v-if="isLoggedIn" @click="goEditProfile">
           <text class="nickname">{{ userInfo.nickname || '用户' }}</text>
-          <text class="phone">{{ userInfo.phone || '点击完善信息' }}</text>
+          <text class="phone">{{ formatPhone(userInfo.phoneEncrypted) }}</text>
         </view>
         <view class="info" v-else @click="goLogin">
           <text class="nickname">点击登录</text>
@@ -42,48 +44,62 @@
       <view class="menu-item" @click="goAppointments('')">
         <text class="icon">📋</text>
         <text class="label">我的预约</text>
-        <text class="arrow">></text>
+        <text class="arrow">›</text>
       </view>
       <view class="menu-item" @click="goRecords">
         <text class="icon">📝</text>
         <text class="label">问诊记录</text>
-        <text class="arrow">></text>
+        <text class="arrow">›</text>
       </view>
       <view class="menu-item" @click="goAiHistory">
         <text class="icon">🤖</text>
         <text class="label">AI问诊历史</text>
-        <text class="arrow">></text>
+        <text class="arrow">›</text>
       </view>
     </view>
     
     <view class="menu-section">
       <view class="menu-item" @click="editProfile">
         <text class="icon">👤</text>
-        <text class="label">编辑资料</text>
-        <text class="arrow">></text>
+        <text class="label">个人档案</text>
+        <text class="arrow">›</text>
       </view>
-      <view class="menu-item" @click="showPrivacy">
-        <text class="icon">🔒</text>
-        <text class="label">隐私设置</text>
-        <text class="arrow">></text>
+      <view class="menu-item" @click="goMember">
+        <text class="icon">👑</text>
+        <text class="label">会员中心</text>
+        <text class="arrow">›</text>
       </view>
       <view class="menu-item" @click="showAbout">
         <text class="icon">ℹ️</text>
         <text class="label">关于我们</text>
-        <text class="arrow">></text>
+        <text class="arrow">›</text>
       </view>
     </view>
     
     <!-- 退出登录按钮 -->
     <button class="logout-btn" v-if="isLoggedIn" @click="handleLogout">退出登录</button>
+    
+    <view style="height: 120rpx;"></view>
+    
+    <!-- 底部导航栏 -->
+    <TabBar currentTab="profile" />
+    
+    <!-- 全局悬浮球 -->
+    <FloatingAI />
   </view>
 </template>
 
 <script>
+import TabBar from '@/components/TabBar/TabBar.vue'
+import FloatingAI from '@/components/FloatingAI/FloatingAI.vue'
 import { apiGetUserInfo, apiGetUnreadCount, apiUploadAvatar } from '@/utils/request.js'
 import { getUserInfo, isLoggedIn, clearLoginInfo } from '@/utils/store.js'
 
 export default {
+  components: {
+    TabBar,
+    FloatingAI
+  },
   data() {
     return {
       isLoggedIn: false,
@@ -196,19 +212,26 @@ export default {
     },
     
     editProfile() {
+      this.goEditProfile()
+    },
+    
+    goEditProfile() {
       if (!this.isLoggedIn) {
         this.goLogin()
         return
       }
-      uni.showToast({ title: '编辑资料功能开发中', icon: 'none' })
+      uni.navigateTo({
+        url: '/pages/profile/profile-edit'
+      })
     },
     
-    showPrivacy() {
-      uni.showModal({
-        title: '隐私设置',
-        content: '您的个人信息将被严格保密，仅用于医疗服务相关用途。',
-        showCancel: false
-      })
+    goMember() {
+      if (!this.isLoggedIn) {
+        this.goLogin()
+        return
+      }
+      // 会员中心功能，暂时提示开发中
+      uni.showToast({ title: '会员功能开发中', icon: 'none' })
     },
     
     showAbout() {
@@ -235,6 +258,18 @@ export default {
           }
         }
       })
+    },
+    
+    formatPhone(phone) {
+      if (!phone) return '暂无手机号'
+      
+      // 清理 ENC_ 前缀（如果有）
+      let purePhone = String(phone).replace(/^ENC_/, '')
+      
+      if (purePhone.length === 11) {
+          return purePhone.substring(0, 3) + '*****' + purePhone.substring(8)
+      }
+      return purePhone
     }
   }
 }
@@ -271,11 +306,31 @@ export default {
     border-radius: 20rpx;
     box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.1);
     
-    .avatar {
+    .avatar-wrapper {
+      position: relative;
       width: 120rpx;
       height: 120rpx;
       border-radius: 60rpx;
+      overflow: hidden;
       background: #f0f0f0;
+      
+      .avatar {
+        width: 100%;
+        height: 100%;
+      }
+      
+      .upload-tip {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 40rpx;
+        line-height: 40rpx;
+        background: rgba(0, 0, 0, 0.5);
+        color: #fff;
+        font-size: 20rpx;
+        text-align: center;
+      }
     }
     
     .info {

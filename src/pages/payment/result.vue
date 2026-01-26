@@ -1,5 +1,8 @@
 <template>
   <view class="result-container">
+    <!-- 返回按钮 -->
+
+    
     <view class="result-card" :class="status">
       <text class="icon">{{ status === 'success' ? '✅' : '⏳' }}</text>
       <text class="title">{{ status === 'success' ? '支付成功' : '待支付' }}</text>

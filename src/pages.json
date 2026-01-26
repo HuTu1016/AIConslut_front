@@ -8,6 +8,13 @@
 			}
 		},
 		{
+			"path": "pages/message/message",
+			"style": {
+				"navigationBarTitleText": "消息中心",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/login/login",
 			"style": {
 				"navigationBarTitleText": "登录",
@@ -19,6 +26,12 @@
 			"style": {
 				"navigationBarTitleText": "个人中心",
 				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/profile/profile-edit",
+			"style": {
+				"navigationBarTitleText": "完善信息"
 			}
 		},
 		{
