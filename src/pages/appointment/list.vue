@@ -49,7 +49,6 @@
             <template v-else>
               <text class="label">预约时间</text>
               <text class="time">{{ formatTime(item.appointmentTime) }}</text>
-              <text class="expired-tag" v-if="item.status === 10 && isExpired(item)">已过期</text>
             </template>
           </view>
           <view class="actions">
@@ -59,13 +58,10 @@
               <button class="btn btn-primary" @click.stop="handlePay(item)">去支付</button>
             </template>
             
-            <!-- 待就诊状态：未过期显示排队，已过期显示更多 -->
-            <template v-else-if="item.status === 10 && !isExpired(item)">
+            <!-- 待就诊状态：显示取消和排队等候 -->
+            <template v-else-if="item.status === 10">
               <button class="btn btn-cancel" @click.stop="handleCancel(item)">取消</button>
               <button class="btn btn-primary" @click.stop="goWaiting(item)">排队等候</button>
-            </template>
-            <template v-else-if="item.status === 10 && isExpired(item)">
-              <button class="btn btn-cancel" @click.stop="handleMore(item)">更多</button>
             </template>
             
             <!-- 就诊中状态 -->
@@ -169,13 +165,7 @@ export default {
       return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
     },
 
-    /**
-     * 判断待就诊订单是否已过期（预约时间已过）
-     */
-    isExpired(item) {
-      if (!item.appointmentTime) return false
-      return new Date(item.appointmentTime).getTime() < this.now
-    },
+
 
     async loadData(isLoadMore = false) {
       if (this.loading) return
@@ -592,16 +582,7 @@ export default {
         font-variant-numeric: tabular-nums;
       }
 
-      /* 已过期标签 */
-      .expired-tag {
-        display: inline-block;
-        font-size: 22rpx;
-        color: #fff;
-        background: #FF4D4F;
-        padding: 2rpx 12rpx;
-        border-radius: 6rpx;
-        margin-left: 12rpx;
-      }
+
     }
     
     .actions {
