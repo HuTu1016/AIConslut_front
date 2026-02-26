@@ -93,7 +93,7 @@ export default {
       loading: false,
       searched: false, // 是否已执行过搜索
       searchTimer: null,
-      hotTags: ['感冒发烧', '儿科', '内科', '皮肤科', '骨科', '神经内科', '心血管', '眼科']
+      hotTags: ['急诊', '内科', '外科', '产科', '专科', '中医']
     }
   },
   onLoad(options) {

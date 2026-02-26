@@ -16,7 +16,7 @@
             <text class="name">{{ doctor.name }}</text>
             <text class="title">{{ doctor.title }}</text>
           </view>
-          <text class="dept">{{ doctor.departmentName }}</text>
+          <text class="dept">{{ doctor.departmentName }} | {{ doctor.hospital || '所属医院' }}</text>
           <view class="rating-row">
             <text class="star">⭐</text>
             <text class="score">{{ doctor.rating }}</text>
