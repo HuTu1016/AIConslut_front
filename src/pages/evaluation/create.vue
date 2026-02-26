@@ -18,7 +18,7 @@
                 v-for="i in 5" 
                 :key="i"
                 :class="{ active: form.overallScore >= i }"
-                @click="form.overallScore = i">
+                @click="!readonly && (form.overallScore = i)">
             {{ form.overallScore >= i ? '★' : '☆' }}
           </text>
         </view>
@@ -32,7 +32,7 @@
                 v-for="i in 5" 
                 :key="i"
                 :class="{ active: form.attitudeScore >= i }"
-                @click="form.attitudeScore = i">
+                @click="!readonly && (form.attitudeScore = i)">
             {{ form.attitudeScore >= i ? '★' : '☆' }}
           </text>
         </view>
@@ -45,7 +45,7 @@
                 v-for="i in 5" 
                 :key="i"
                 :class="{ active: form.professionalScore >= i }"
-                @click="form.professionalScore = i">
+                @click="!readonly && (form.professionalScore = i)">
             {{ form.professionalScore >= i ? '★' : '☆' }}
           </text>
         </view>
@@ -58,7 +58,7 @@
                 v-for="i in 5" 
                 :key="i"
                 :class="{ active: form.responseScore >= i }"
-                @click="form.responseScore = i">
+                @click="!readonly && (form.responseScore = i)">
             {{ form.responseScore >= i ? '★' : '☆' }}
           </text>
         </view>
@@ -73,7 +73,7 @@
               v-for="tag in tagOptions" 
               :key="tag"
               :class="{ active: selectedTags.includes(tag) }"
-              @click="toggleTag(tag)">
+              @click="!readonly && toggleTag(tag)">
           {{ tag }}
         </view>
       </view>
@@ -85,7 +85,8 @@
       <textarea class="content-input" 
                 v-model="form.content" 
                 placeholder="分享您的就诊体验，帮助更多人了解这位医生..."
-                maxlength="500" />
+                maxlength="500"
+                :disabled="readonly" />
       <text class="word-count">{{ form.content.length }}/500</text>
     </view>
 
@@ -93,13 +94,13 @@
     <view class="anonymous-section">
       <view class="switch-row">
         <text class="switch-label">匿名评价</text>
-        <switch :checked="form.isAnonymous" @change="onAnonymousChange" color="#667eea" />
+        <switch :checked="form.isAnonymous" @change="onAnonymousChange" color="#667eea" :disabled="readonly" />
       </view>
       <text class="anonymous-tip">匿名后您的昵称将显示为"匿名用户"</text>
     </view>
 
-    <!-- 提交按钮 -->
-    <view class="btn-area">
+    <!-- 提交按钮（仅创建模式显示） -->
+    <view class="btn-area" v-if="!readonly">
       <button class="submit-btn" :loading="submitting" @click="submit">
         {{ submitting ? '提交中...' : '提交评价' }}
       </button>
@@ -134,7 +135,8 @@ export default {
         '用药合理',
         '值得推荐'
       ],
-      submitting: false
+      submitting: false,
+      readonly: false
     }
   },
 
@@ -142,6 +144,12 @@ export default {
     if (options.appointmentId) {
       this.appointmentId = options.appointmentId
       this.loadAppointment()
+    }
+    // 只读模式：查看已有评价
+    if (options.readonly === '1') {
+      this.readonly = true
+      uni.setNavigationBarTitle({ title: '查看评价' })
+      this.loadExistingEvaluation()
     }
   },
 
@@ -157,6 +165,31 @@ export default {
         }
       } catch (e) {
         console.error('加载预约信息失败', e)
+      }
+    },
+
+    /** 加载已有评价数据（查看模式） */
+    async loadExistingEvaluation() {
+      try {
+        const res = await request({
+          url: `/api/v1/user/evaluations/appointment/${this.appointmentId}`,
+          method: 'GET'
+        })
+        if (res.code === 200 && res.data) {
+          const e = res.data
+          this.form.overallScore = e.overallScore || 5
+          this.form.attitudeScore = e.attitudeScore || 5
+          this.form.professionalScore = e.professionalScore || 5
+          this.form.responseScore = e.responseScore || 5
+          this.form.content = e.content || ''
+          this.form.isAnonymous = e.isAnonymous || false
+          // 解析标签
+          if (e.tags) {
+            try { this.selectedTags = JSON.parse(e.tags) } catch (_) {}
+          }
+        }
+      } catch (e) {
+        console.error('加载评价失败', e)
       }
     },
 

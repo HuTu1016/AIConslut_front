@@ -36,6 +36,15 @@
             <text class="dept">{{ item.departmentName }}</text>
             <text class="patient">就诊人：{{ item.patientName }}</text>
           </view>
+          <!-- 已完成订单显示评价入口 -->
+          <button 
+            v-if="item.status === 30" 
+            class="btn-eval" 
+            :class="{ evaluated: item.isEvaluated }" 
+            @click.stop="item.isEvaluated ? goViewEvaluation(item) : goEvaluation(item)"
+          >
+            {{ item.isEvaluated ? '查看评价' : '去评价' }}
+          </button>
         </view>
         
         <view class="card-footer">
@@ -385,6 +394,20 @@ export default {
       })
     },
     
+    /** 跳转到评价页面 */
+    goEvaluation(item) {
+      uni.navigateTo({
+        url: `/pages/evaluation/create?appointmentId=${item.id}`
+      })
+    },
+    
+    /** 查看评价详情 */
+    goViewEvaluation(item) {
+      uni.navigateTo({
+        url: `/pages/evaluation/create?appointmentId=${item.id}&readonly=1`
+      })
+    },
+    
     goHome() {
       uni.reLaunch({
         url: '/pages/index/index'
@@ -540,6 +563,28 @@ export default {
         margin-top: 8rpx;
         font-size: 26rpx;
         color: #666;
+      }
+    }
+    
+    .btn-eval {
+      align-self: center;
+      flex-shrink: 0;
+      height: 56rpx;
+      line-height: 56rpx;
+      padding: 0 24rpx;
+      font-size: 24rpx;
+      color: #fff;
+      background: linear-gradient(135deg, #E8A87C, #F5C89A);
+      border-radius: 28rpx;
+      margin: 0;
+      
+      &::after {
+        border: none;
+      }
+      
+      &.evaluated {
+        color: #999;
+        background: #f5f5f5;
       }
     }
   }
