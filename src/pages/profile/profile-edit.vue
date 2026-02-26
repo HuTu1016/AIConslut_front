@@ -1,10 +1,11 @@
 <template>
   <view class="profile-edit-container" @click="exitEditMode">
     <!-- 档案信息区域 -->
-    <view class="avatar-section">
+    <view class="avatar-section" @click="chooseAvatar">
       <image class="avatar" :src="form.avatarUrl || '/static/default-avatar.png'" mode="aspectFill"></image>
+      <view class="avatar-tip">点击更换头像</view>
       <view class="info-text">
-        <text class="nickname">{{ form.nickname || '未设置昵称' }}</text>
+
         <text class="sub-info">{{ genderText }} | {{ calculateAge(form.birthdate) }}</text>
       </view>
     </view>
@@ -304,7 +305,8 @@ export default {
       customInputTitle: '',
       // 编辑模式相关
       editingField: '',
-      longPressTimer: null
+      longPressTimer: null,
+      initialFormStr: ''
     }
   },
   computed: {
@@ -323,6 +325,33 @@ export default {
     this.initDateData()
     this.initRegionData()
     this.loadUserInfo()
+  },
+  onBackPress(options) {
+    // navigateBack引发的返回直接放行，避免无限循环拦截
+    if (options.from === 'navigateBack') {
+      return false
+    }
+    const currentFormStr = JSON.stringify(this.form)
+    // 如果初始数据存在，且数据发生了修改，且当前不在保存中
+    if (this.initialFormStr && currentFormStr !== this.initialFormStr && !this.saving) {
+      uni.showModal({
+        title: '提示',
+        content: '您修改了个人信息还未保存，是否保存？',
+        cancelText: '不保存',
+        confirmText: '保存',
+        success: (res) => {
+          if (res.confirm) {
+            this.handleSave()
+          } else {
+            // 选择不保存时，更新初始值为当前值，并手动执行返回
+            this.initialFormStr = currentFormStr
+            uni.navigateBack()
+          }
+        }
+      })
+      return true // 阻止默认的返回操作
+    }
+    return false // 允许正常返回
   },
   methods: {
     initDateData() {
@@ -384,6 +413,8 @@ export default {
           // 更新选择器索引
           this.tempGenderIndex = this.genderOptions.findIndex(g => g.value === this.form.gender)
           if (this.tempGenderIndex < 0) this.tempGenderIndex = 0
+          
+          this.initialFormStr = JSON.stringify(this.form)
         }
       } catch (err) {
         console.error('加载用户信息失败:', err)
@@ -427,7 +458,29 @@ export default {
       return age + '岁'
     },
     chooseAvatar() {
-      // 移除头像上传功能
+      uni.chooseImage({
+        count: 1,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera'],
+        success: (res) => {
+          const tempFilePath = res.tempFilePaths[0]
+          // 上传文件
+          uni.showLoading({ title: '上传中...' })
+          apiUploadAvatar(tempFilePath).then(uploadRes => {
+            if (uploadRes.code === 200 && uploadRes.data) {
+              this.form.avatarUrl = uploadRes.data.avatarUrl
+              uni.showToast({ title: '上传成功', icon: 'success' })
+            } else {
+              uni.showToast({ title: uploadRes.message || '上传失败', icon: 'none' })
+            }
+          }).catch(err => {
+            console.error('上传失败:', err)
+            uni.showToast({ title: '网络请求失败', icon: 'none' })
+          }).finally(() => {
+            uni.hideLoading()
+          })
+        }
+      })
     },
     // 处理长按开始
     handleTouchStart(field) {
@@ -628,21 +681,21 @@ export default {
       this.saving = true
       try {
         const data = {
-          nickname: this.form.nickname || null,
-          avatarUrl: this.form.avatarUrl || null,
+          nickname: this.form.nickname || '',
+          avatarUrl: this.form.avatarUrl || '',
           gender: this.form.gender,
-          realName: this.form.realName || null,
+          realName: this.form.realName || '',
           birthdate: this.form.birthdate || null,
-          province: this.form.province || null,
-          city: this.form.city || null,
-          district: this.form.district || null,
+          province: this.form.province || '',
+          city: this.form.city || '',
+          district: this.form.district || '',
           height: this.form.height ? parseFloat(this.form.height) : null,
           weight: this.form.weight ? parseFloat(this.form.weight) : null,
-          bloodType: this.form.bloodType || null,
-          allergyHistory: this.form.allergyHistory.length > 0 ? this.form.allergyHistory : null,
-          chronicDisease: this.form.chronicDisease.length > 0 ? this.form.chronicDisease : null,
-          surgeryHistory: this.form.surgeryHistory.length > 0 ? this.form.surgeryHistory : null,
-          lifestyleTags: this.form.lifestyleTags.length > 0 ? this.form.lifestyleTags : null
+          bloodType: this.form.bloodType || '',
+          allergyHistory: this.form.allergyHistory || [],
+          chronicDisease: this.form.chronicDisease || [],
+          surgeryHistory: this.form.surgeryHistory || [],
+          lifestyleTags: this.form.lifestyleTags || []
         }
         await apiUpdateUserInfo(data)
         uni.showToast({ title: '保存成功', icon: 'success' })

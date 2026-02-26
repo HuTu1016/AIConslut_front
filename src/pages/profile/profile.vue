@@ -4,17 +4,24 @@
     <view class="user-card">
       <view class="card-bg"></view>
       <view class="user-info">
-        <view class="avatar-wrapper" @click="isLoggedIn && chooseAvatar()">
+        <view class="avatar-wrapper" @click="isLoggedIn && goEditProfile()">
           <image 
             class="avatar" 
             :src="userInfo.avatarUrl || '/static/default-avatar.png'" 
             mode="aspectFill"
           ></image>
-          <view class="upload-tip" v-if="!userInfo.avatarUrl">点击上传</view>
         </view>
         <view class="info" v-if="isLoggedIn" @click="goEditProfile">
-          <text class="nickname">{{ userInfo.nickname || '用户' }}</text>
-          <text class="sub-info">{{ userInfo.age ? userInfo.age + '岁' : '' }}{{ userInfo.age && userInfo.gender ? ' | ' : '' }}{{ userInfo.gender === 1 ? '男' : userInfo.gender === 2 ? '女' : '' }}</text>
+          <view class="nickname-row">
+            <text class="nickname">{{ userInfo.nickname || '未填写昵称' }}</text>
+            <view class="completion-tag" v-if="completionRate < 100" @click.stop="goEditProfile">
+              完善度{{ completionRate }}% <text class="arrow">›</text>
+            </view>
+            <view class="completion-tag complete" v-else @click.stop="goEditProfile">
+              信息已完善 100% <text class="arrow">›</text>
+            </view>
+          </view>
+          <text class="sub-info" v-if="userInfo.age">{{ userInfo.age }}岁</text>
           <text class="phone">{{ formatPhone(userInfo.phoneEncrypted) }}</text>
         </view>
         <view class="info" v-else @click="goLogin">
@@ -109,6 +116,37 @@ export default {
         completedCount: 0,
         unreadCount: 0
       }
+    }
+  },
+  computed: {
+    completionRate() {
+      if (!this.userInfo || Object.keys(this.userInfo).length === 0) return 0
+      
+      const fieldsToCheck = [
+        'nickname', 'avatarUrl', 'gender', 'realName', 'birthdate', 
+        'province', 'height', 'weight', 'bloodType'
+      ]
+      
+      let filledCount = 0
+      fieldsToCheck.forEach(field => {
+        if (this.userInfo[field]) {
+          if (field === 'gender') {
+            if (this.userInfo[field] > 0) filledCount++
+          } else {
+            filledCount++
+          }
+        }
+      })
+      
+      const arrayFields = ['allergyHistory', 'chronicDisease', 'surgeryHistory', 'lifestyleTags']
+      arrayFields.forEach(field => {
+          if (this.userInfo[field] && this.userInfo[field] !== '[]') {
+              filledCount++
+          }
+      })
+      
+      const totalFields = fieldsToCheck.length + arrayFields.length
+      return Math.round((filledCount / totalFields) * 100)
     }
   },
   onShow() {
@@ -335,11 +373,39 @@ export default {
     .info {
       margin-left: 30rpx;
       
+      .nickname-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 6rpx;
+      }
+      
       .nickname {
-        display: block;
         font-size: 36rpx;
         font-weight: bold;
         color: #333;
+        margin-right: 16rpx;
+      }
+      
+      .completion-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 4rpx 12rpx;
+        background: rgba(255, 176, 46, 0.1);
+        color: #FFB02E;
+        font-size: 22rpx;
+        border-radius: 20rpx;
+        border: 1rpx solid rgba(255, 176, 46, 0.3);
+        
+        &.complete {
+          background: rgba(0, 208, 156, 0.1);
+          color: #00D09C;
+          border-color: rgba(0, 208, 156, 0.3);
+        }
+        
+        .arrow {
+          margin-left: 4rpx;
+          font-size: 20rpx;
+        }
       }
       
       .sub-info {
