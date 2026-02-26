@@ -9,9 +9,8 @@
       <view class="header-section">
         <view class="header-top">
           <view class="location">
-            <text class="icon">📍</text>
-            <text class="text">{{ cityName || '定位中...' }}</text>
-            <text class="arrow">▼</text>
+            <text class="icon">🏥</text>
+            <text class="text">AI智慧问诊</text>
           </view>
           <view class="notification">
             <text class="icon">🔔</text>
@@ -167,7 +166,7 @@
 import TabBar from '@/components/TabBar/TabBar.vue'
 import FloatingAI from '@/components/FloatingAI/FloatingAI.vue'
 import { checkLogin } from '@/utils/store.js'
-import { request, apiGetDoctors, apiGetLocation, apiGetRecommendArticles } from '@/utils/request.js'
+import { request, apiGetDoctors, apiGetRecommendArticles } from '@/utils/request.js'
 
 // 科室图标映射
 const DEPT_ICONS = {
@@ -191,11 +190,11 @@ export default {
       departments: [],
       doctors: [],
       articles: [],
-      cityName: '定位中...'
+
     }
   },
   onLoad() {
-    this.getLocation()
+
     this.loadDepartments()
     this.loadDoctors()
     this.loadArticles()
@@ -312,36 +311,6 @@ export default {
     },
 
 
-    // 获取定位
-    getLocation() {
-      const that = this
-      uni.getLocation({
-        type: 'gcj02',
-        success: function (res) {
-          console.log('当前位置的经度：' + res.longitude)
-          console.log('当前位置的纬度：' + res.latitude)
-          
-          apiGetLocation(res.latitude, res.longitude).then(res => {
-             if(res.data) {
-               that.cityName = res.data
-             } else {
-                that.cityName = '未知'
-             }
-          }).catch(err => {
-             console.error('获取城市失败', err)
-             that.cityName = '未知'
-          })
-        },
-        fail: function (err) {
-            console.error('获取定位失败', err)
-            that.cityName = '定位失败'
-            uni.showToast({
-                title: '请开启定位权限',
-                icon: 'none'
-            })
-        }
-      })
-    }
   }
 }
 </script>
