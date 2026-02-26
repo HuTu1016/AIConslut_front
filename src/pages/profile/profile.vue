@@ -14,6 +14,7 @@
         </view>
         <view class="info" v-if="isLoggedIn" @click="goEditProfile">
           <text class="nickname">{{ userInfo.nickname || '用户' }}</text>
+          <text class="sub-info">{{ userInfo.age ? userInfo.age + '岁' : '' }}{{ userInfo.age && userInfo.gender ? ' | ' : '' }}{{ userInfo.gender === 1 ? '男' : userInfo.gender === 2 ? '女' : '' }}</text>
           <text class="phone">{{ formatPhone(userInfo.phoneEncrypted) }}</text>
         </view>
         <view class="info" v-else @click="goLogin">
@@ -59,16 +60,15 @@
     </view>
     
     <view class="menu-section">
-      <view class="menu-item" @click="editProfile">
-        <text class="icon">👤</text>
+      <view class="menu-item" @click="goHealthProfile">
+        <text class="icon">📝</text>
         <text class="label">个人档案</text>
         <text class="arrow">›</text>
       </view>
-      <view class="menu-item" @click="goMember">
-        <text class="icon">👑</text>
-        <text class="label">会员中心</text>
-        <text class="arrow">›</text>
-      </view>
+
+          </view>
+    
+    <view class="menu-section">
       <view class="menu-item" @click="showAbout">
         <text class="icon">ℹ️</text>
         <text class="label">关于我们</text>
@@ -145,7 +145,7 @@ export default {
       try {
         const res = await apiGetUnreadCount()
         if (res.data) {
-          this.stats.unreadCount = res.data.count || 0
+          this.stats.unreadCount = res.data.count || res.data || 0
         }
       } catch (err) {
         console.error('获取未读消息失败:', err)
@@ -165,7 +165,7 @@ export default {
     },
     
     goMessages() {
-      uni.showToast({ title: '消息功能开发中', icon: 'none' })
+      uni.navigateTo({ url: '/pages/notification/list' })
     },
     
     goRecords() {
@@ -225,13 +225,12 @@ export default {
       })
     },
     
-    goMember() {
+    goHealthProfile() {
       if (!this.isLoggedIn) {
         this.goLogin()
         return
       }
-      // 会员中心功能，暂时提示开发中
-      uni.showToast({ title: '会员功能开发中', icon: 'none' })
+      uni.navigateTo({ url: '/pages/health/index' })
     },
     
     showAbout() {
@@ -343,9 +342,16 @@ export default {
         color: #333;
       }
       
+      .sub-info {
+        display: block;
+        margin-top: 6rpx;
+        font-size: 24rpx;
+        color: #666;
+      }
+      
       .phone {
         display: block;
-        margin-top: 10rpx;
+        margin-top: 6rpx;
         font-size: 26rpx;
         color: #999;
       }
@@ -405,6 +411,19 @@ export default {
       flex: 1;
       font-size: 30rpx;
       color: #333;
+    }
+    
+    .badge {
+      min-width: 36rpx;
+      height: 36rpx;
+      line-height: 36rpx;
+      padding: 0 10rpx;
+      background: #f44336;
+      color: #fff;
+      font-size: 22rpx;
+      border-radius: 18rpx;
+      text-align: center;
+      margin-right: 10rpx;
     }
     
     .arrow {

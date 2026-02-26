@@ -88,7 +88,7 @@
 </template>
 
 <script>
-import { apiGetAppointments, apiCancelAppointment } from '@/utils/request.js'
+import { apiGetAppointments, apiCancelAppointment, request } from '@/utils/request.js'
 
 export default {
   data() {
@@ -194,9 +194,33 @@ export default {
       })
     },
     
-    handlePay(item) {
-      uni.navigateTo({
-        url: `/pages/payment/pay?appointmentId=${item.id}`
+    async handlePay(item) {
+      uni.showModal({
+        title: '确认支付',
+        content: `确定支付¥${item.amount || 0}？（模拟支付）`,
+        success: async (res) => {
+          if (res.confirm) {
+            try {
+              uni.showLoading({ title: '支付中...' })
+              const result = await request({
+                url: `/api/v1/user/payments/mock-pay/${item.id}`,
+                method: 'POST'
+              })
+              uni.hideLoading()
+              if (result.code === 200) {
+                uni.showToast({ title: '支付成功', icon: 'success' })
+                item.status = 10 // 更新为待就诊
+                this.loadData() // 刷新列表
+              } else {
+                uni.showToast({ title: result.message || '支付失败', icon: 'none' })
+              }
+            } catch (err) {
+              uni.hideLoading()
+              console.error('支付失败:', err)
+              uni.showToast({ title: '支付失败', icon: 'none' })
+            }
+          }
+        }
       })
     },
     

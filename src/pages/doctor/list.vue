@@ -158,8 +158,9 @@ export default {
     
     goBook(doctor) {
       if (!checkLogin()) return
+      // 跳转到医生详情页选择排班后再预约
       uni.navigateTo({
-        url: `/pages/appointment/book?doctorId=${doctor.id}`
+        url: `/pages/doctor/detail?id=${doctor.id}&action=book`
       })
     },
     

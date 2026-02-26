@@ -80,7 +80,44 @@
         </scroll-view>
       </view>
       
-      <!-- 推荐医生 -->
+      <!-- 健康资讯 -->
+      <view class="section">
+        <view class="section-header">
+          <text class="title">健康资讯</text>
+          <view class="more" @click="goArticleList">
+            <text>更多</text>
+            <text class="arrow">›</text>
+          </view>
+        </view>
+        <view class="article-list">
+          <view 
+            class="article-card" 
+            v-for="article in articles" 
+            :key="article.id"
+            @click="goArticleDetail(article)"
+          >
+            <view class="article-content">
+              <text class="article-title">{{ article.title }}</text>
+              <text class="article-summary">{{ article.summary }}</text>
+              <view class="article-meta">
+                <text class="author">{{ article.author || '健康小编' }}</text>
+                <text class="time">{{ formatTime(article.createdAt) }}</text>
+              </view>
+            </view>
+            <image 
+              class="article-cover" 
+              :src="article.coverUrl || '/static/default-article.png'" 
+              mode="aspectFill"
+              v-if="article.coverUrl"
+            ></image>
+          </view>
+          <view class="empty-article" v-if="articles.length === 0">
+            <text>暂无健康资讯</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 名医推荐 -->
       <view class="section">
         <view class="section-header">
           <text class="title">名医推荐</text>
@@ -89,37 +126,30 @@
             <text class="arrow">›</text>
           </view>
         </view>
-        <view class="doctor-list">
-          <view 
-            class="doctor-card" 
-            v-for="doctor in doctors" 
-            :key="doctor.id"
-            @click="goDoctorDetail(doctor)"
-          >
-            <view class="card-left">
+        <scroll-view scroll-x class="doctor-scroll-h" :show-scrollbar="false">
+          <view class="doctor-h-wrapper">
+            <view 
+              class="doctor-h-card" 
+              v-for="doctor in doctors.slice(0, 4)" 
+              :key="doctor.id"
+              @click="goDoctorDetail(doctor)"
+            >
               <image class="avatar" :src="$resolveImage(doctor.avatarUrl)" mode="aspectFill"></image>
-              <view class="rating-badge">
+              <text class="name">{{ doctor.name }}</text>
+              <text class="title-tag">{{ doctor.title }}</text>
+              <view class="rating-row">
                 <text class="star">★</text>
                 <text class="score">{{ doctor.rating || '5.0' }}</text>
               </view>
-            </view>
-            <view class="card-right">
-              <view class="name-row">
-                <text class="name">{{ doctor.name }}</text>
-                <text class="title-tag">{{ doctor.title }}</text>
+              <view class="comment-box" v-if="doctor.latestComment">
+                <text class="comment-text">"{{ doctor.latestComment }}"</text>
               </view>
-              <view class="info-row">
-                <text class="dept-name">{{ doctor.departmentName }}</text>
-                <text class="hospital-name">协和医院</text> <!-- 占位 -->
-              </view>
-              <text class="intro">{{ doctor.introduction }}</text>
-              <view class="bottom-row">
-                <text class="price">¥{{ doctor.consultPrice }}</text>
-                <button class="book-btn" @click.stop="goBook(doctor)">预约</button>
+              <view class="comment-box" v-else>
+                <text class="comment-text">"专业耐心，值得信赖"</text>
               </view>
             </view>
           </view>
-        </view>
+        </scroll-view>
       </view>
 
       <view style="height: 120rpx;"></view>
@@ -137,7 +167,7 @@
 import TabBar from '@/components/TabBar/TabBar.vue'
 import FloatingAI from '@/components/FloatingAI/FloatingAI.vue'
 import { checkLogin } from '@/utils/store.js'
-import { apiGetDepartments, apiGetDoctors, apiGetLocation } from '@/utils/request.js'
+import { request, apiGetDoctors, apiGetLocation, apiGetRecommendArticles } from '@/utils/request.js'
 
 // 科室图标映射
 const DEPT_ICONS = {
@@ -160,6 +190,7 @@ export default {
     return {
       departments: [],
       doctors: [],
+      articles: [],
       cityName: '定位中...'
     }
   },
@@ -167,19 +198,24 @@ export default {
     this.getLocation()
     this.loadDepartments()
     this.loadDoctors()
+    this.loadArticles()
   },
   onShow() {
     // 页面显示时可刷新数据
   },
   methods: {
-    // 加载科室列表
+    // 加载科室列表（只加载一级科室）
     async loadDepartments() {
       try {
-        const res = await apiGetDepartments()
-        if (res.data) {
-          this.departments = res.data.map(dept => ({
+        const res = await request({
+          url: '/api/v1/public/departments/tree',
+          method: 'GET'
+        })
+        if (res.code === 200 && res.data) {
+          // 只取一级科室展示在首页
+          this.departments = res.data.slice(0, 8).map(dept => ({
             ...dept,
-            icon: DEPT_ICONS[dept.code] || '🏥'
+            icon: dept.icon || DEPT_ICONS[dept.code] || '🏥'
           }))
         }
       } catch (err) {
@@ -197,6 +233,32 @@ export default {
       } catch (err) {
         console.error('加载医生失败:', err)
       }
+    },
+    
+    // 加载健康资讯
+    async loadArticles() {
+      try {
+        const res = await apiGetRecommendArticles(3)
+        if (res.data) {
+          this.articles = res.data
+        }
+      } catch (err) {
+        console.error('加载资讯失败:', err)
+      }
+    },
+    
+    goArticleList() {
+      uni.showToast({ title: '资讯列表开发中', icon: 'none' })
+    },
+    
+    goArticleDetail(article) {
+      uni.showToast({ title: '资讯详情开发中', icon: 'none' })
+    },
+    
+    formatTime(time) {
+      if (!time) return ''
+      const date = new Date(time)
+      return `${date.getMonth() + 1}月${date.getDate()}日`
     },
     
     goSearch() {
@@ -223,9 +285,17 @@ export default {
     },
     
     goDoctorList(dept) {
-      uni.navigateTo({
-        url: `/pages/doctor/list?deptId=${dept.id || ''}&deptName=${dept.name || ''}`
-      })
+      // 如果是一级科室（有子科室），跳转到科室页面展示子科室
+      if (dept.children && dept.children.length > 0) {
+        uni.navigateTo({
+          url: `/pages/department/department?parentId=${dept.id}&parentName=${dept.name}`
+        })
+      } else {
+        // 二级科室直接跳转医生列表
+        uni.navigateTo({
+          url: `/pages/doctor/list?deptId=${dept.id || ''}&deptName=${dept.name || ''}`
+        })
+      }
     },
     
     goDoctorDetail(doctor) {
@@ -678,6 +748,150 @@ export default {
           font-size: 24rpx;
           border-radius: 28rpx;
         }
+      }
+    }
+  }
+}
+
+/* 健康资讯样式 */
+.article-list {
+  .article-card {
+    display: flex;
+    background: #fff;
+    padding: 24rpx;
+    margin-bottom: 20rpx;
+    border-radius: 16rpx;
+    box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+    
+    .article-content {
+      flex: 1;
+      margin-right: 20rpx;
+      
+      .article-title {
+        font-size: 28rpx;
+        font-weight: bold;
+        color: #1D2129;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        margin-bottom: 12rpx;
+      }
+      
+      .article-summary {
+        font-size: 24rpx;
+        color: #86909C;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        margin-bottom: 12rpx;
+      }
+      
+      .article-meta {
+        display: flex;
+        align-items: center;
+        font-size: 22rpx;
+        color: #C9CDD4;
+        
+        .author {
+          margin-right: 16rpx;
+        }
+      }
+    }
+    
+    .article-cover {
+      width: 160rpx;
+      height: 120rpx;
+      border-radius: 12rpx;
+      flex-shrink: 0;
+    }
+  }
+  
+  .empty-article {
+    text-align: center;
+    padding: 40rpx;
+    color: #999;
+    font-size: 26rpx;
+  }
+}
+
+/* 名医推荐横向样式 */
+.doctor-scroll-h {
+  white-space: nowrap;
+  
+  .doctor-h-wrapper {
+    display: inline-flex;
+    padding: 0 10rpx;
+  }
+  
+  .doctor-h-card {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    width: 200rpx;
+    padding: 24rpx 16rpx;
+    margin-right: 20rpx;
+    background: #fff;
+    border-radius: 16rpx;
+    box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+    
+    .avatar {
+      width: 100rpx;
+      height: 100rpx;
+      border-radius: 50%;
+      margin-bottom: 12rpx;
+    }
+    
+    .name {
+      font-size: 26rpx;
+      font-weight: bold;
+      color: #1D2129;
+      margin-bottom: 6rpx;
+    }
+    
+    .title-tag {
+      font-size: 20rpx;
+      color: #4B6EF2;
+      background: rgba(75, 110, 242, 0.1);
+      padding: 4rpx 10rpx;
+      border-radius: 6rpx;
+      margin-bottom: 8rpx;
+    }
+    
+    .rating-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10rpx;
+      
+      .star {
+        color: #FFB02E;
+        font-size: 24rpx;
+        margin-right: 4rpx;
+      }
+      
+      .score {
+        font-size: 24rpx;
+        font-weight: bold;
+        color: #1D2129;
+      }
+    }
+    
+    .comment-box {
+      width: 100%;
+      background: #F7F8FA;
+      border-radius: 8rpx;
+      padding: 10rpx;
+      
+      .comment-text {
+        font-size: 20rpx;
+        color: #86909C;
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        line-height: 1.4;
       }
     }
   }

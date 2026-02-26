@@ -17,7 +17,7 @@ if (DEV_MODE && !uni.getStorageSync('token')) {
 // ==================== 开发测试配置 END ====================
 
 // API基础地址配置
-const BASE_URL = 'http://192.168.134.91:8080'
+export const BASE_URL = 'http://192.168.1.73:8080'
 
 // 请求超时时间
 const TIMEOUT = 30000
@@ -116,9 +116,10 @@ function handleUnauthorized() {
 }
 
 // API基础地址（用于文件上传）
-const UPLOAD_BASE_URL = 'http://192.168.134.91:8080'
+const UPLOAD_BASE_URL = 'http://192.168.1.73:8080'
 
 /**
+ * 
  * 封装uni.uploadFile为Promise
  * @param {string} filePath 文件临时路径
  * @param {string} url 上传接口地址
@@ -352,13 +353,12 @@ export function apiSendMessage(data) {
 
 /**
  * 获取聊天记录
- * @param {Object} params 查询参数
+ * @param {number} appointmentId 预约ID
  */
-export function apiGetMessages(params) {
+export function apiGetMessages(appointmentId) {
   return request({
-    url: '/api/v1/user/consults/messages',
-    method: 'GET',
-    data: params
+    url: `/api/v1/user/consults/messages/${appointmentId}`,
+    method: 'GET'
   })
 }
 
@@ -423,11 +423,270 @@ export function apiGetConsultRecord(appointmentId) {
  */
 export function apiAiChat(data) {
   return request({
-    url: '/api/v1/user/consults/ai/chat',
+    url: '/api/v1/user/consults/ai-chat',
     method: 'POST',
     data
   })
 }
 
-// 导出BASE_URL供流式请求使用
-export { BASE_URL }
+// ==================== 健康档案相关接口 ====================
+
+/**
+ * 获取健康档案汇总
+ */
+export function apiGetHealthSummary() {
+  return request({
+    url: '/api/v1/user/health/summary',
+    method: 'GET'
+  })
+}
+
+/**
+ * 获取体检报告列表
+ */
+export function apiGetHealthReports(params) {
+  return request({
+    url: '/api/v1/user/health/reports',
+    method: 'GET',
+    data: params
+  })
+}
+
+/**
+ * 获取病史记录列表
+ */
+export function apiGetMedicalHistory() {
+  return request({
+    url: '/api/v1/user/health/history',
+    method: 'GET'
+  })
+}
+
+/**
+ * 添加病史记录
+ */
+export function apiAddMedicalHistory(data) {
+  return request({
+    url: '/api/v1/user/health/history',
+    method: 'POST',
+    data
+  })
+}
+
+/**
+ * 获取用药记录列表
+ */
+export function apiGetMedications() {
+  return request({
+    url: '/api/v1/user/health/medications',
+    method: 'GET'
+  })
+}
+
+/**
+ * 添加用药记录
+ */
+export function apiAddMedication(data) {
+  return request({
+    url: '/api/v1/user/health/medications',
+    method: 'POST',
+    data
+  })
+}
+
+/**
+ * 获取过敏记录列表
+ */
+export function apiGetAllergies() {
+  return request({
+    url: '/api/v1/user/health/allergies',
+    method: 'GET'
+  })
+}
+
+/**
+ * 添加过敏记录
+ */
+export function apiAddAllergy(data) {
+  return request({
+    url: '/api/v1/user/health/allergies',
+    method: 'POST',
+    data
+  })
+}
+
+// ==================== 通知消息相关接口 ====================
+
+/**
+ * 获取通知列表
+ */
+export function apiGetNotifications(params) {
+  return request({
+    url: '/api/v1/user/notifications',
+    method: 'GET',
+    data: params
+  })
+}
+
+/**
+ * 获取未读通知数
+ */
+export function apiGetNotificationUnreadCount() {
+  return request({
+    url: '/api/v1/user/notifications/unread/count',
+    method: 'GET'
+  })
+}
+
+/**
+ * 标记通知已读
+ */
+export function apiMarkNotificationRead(id) {
+  return request({
+    url: `/api/v1/user/notifications/${id}/read`,
+    method: 'POST'
+  })
+}
+
+/**
+ * 全部标记已读
+ */
+export function apiMarkAllNotificationsRead() {
+  return request({
+    url: '/api/v1/user/notifications/read-all',
+    method: 'POST'
+  })
+}
+
+
+
+// ==================== 问诊评价相关接口 ====================
+
+/**
+ * 创建评价
+ */
+export function apiCreateEvaluation(data) {
+  return request({
+    url: '/api/v1/user/evaluations',
+    method: 'POST',
+    data
+  })
+}
+
+/**
+ * 根据预约ID获取评价
+ */
+export function apiGetEvaluationByAppointment(appointmentId) {
+  return request({
+    url: `/api/v1/user/evaluations/appointment/${appointmentId}`,
+    method: 'GET'
+  })
+}
+
+/**
+ * 获取医生评价统计
+ */
+export function apiGetDoctorEvaluationStats(doctorId) {
+  return request({
+    url: `/api/v1/user/evaluations/doctor/${doctorId}/stats`,
+    method: 'GET'
+  })
+}
+
+// ==================== 资讯文章相关接口 ====================
+
+/**
+ * 获取文章列表
+ */
+export function apiGetArticles(params) {
+  return request({
+    url: '/api/v1/public/articles',
+    method: 'GET',
+    data: params
+  })
+}
+
+/**
+ * 获取推荐文章
+ */
+export function apiGetRecommendArticles(limit = 5) {
+  return request({
+    url: '/api/v1/public/articles/recommend',
+    method: 'GET',
+    data: { limit }
+  })
+}
+
+/**
+ * 获取文章详情
+ */
+export function apiGetArticleDetail(id) {
+  return request({
+    url: `/api/v1/public/articles/${id}`,
+    method: 'GET'
+  })
+}
+
+/**
+ * 点赞文章
+ */
+export function apiLikeArticle(id) {
+  return request({
+    url: `/api/v1/public/articles/${id}/like`,
+    method: 'POST'
+  })
+}
+
+// ==================== AI会话管理接口 ====================
+
+/**
+ * 获取AI会话列表
+ */
+export function apiGetAiSessions() {
+  return request({
+    url: '/api/v1/user/ai/sessions',
+    method: 'GET'
+  })
+}
+
+/**
+ * 创建新的AI会话
+ */
+export function apiCreateAiSession() {
+  return request({
+    url: '/api/v1/user/ai/sessions',
+    method: 'POST'
+  })
+}
+
+/**
+ * 获取AI会话详情
+ */
+export function apiGetAiSessionDetail(sessionId) {
+  return request({
+    url: `/api/v1/user/ai/sessions/${sessionId}`,
+    method: 'GET'
+  })
+}
+
+/**
+ * 搜索AI会话
+ */
+export function apiSearchAiSessions(keyword) {
+  return request({
+    url: '/api/v1/user/ai/sessions/search',
+    method: 'GET',
+    data: { keyword }
+  })
+}
+
+/**
+ * 删除AI会话
+ */
+export function apiDeleteAiSession(sessionId) {
+  return request({
+    url: `/api/v1/user/ai/sessions/${sessionId}`,
+    method: 'DELETE'
+  })
+}
+

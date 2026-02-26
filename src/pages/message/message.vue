@@ -13,6 +13,24 @@
       <!-- 列表区域 -->
       <view class="session-list">
         
+        <!-- 消息通知入口 (置顶) -->
+        <view class="session-item notification-entry" @click="goNotifications">
+          <view class="avatar-box notify-bg">
+            <text class="notify-icon">🔔</text>
+          </view>
+          <view class="content-box">
+            <view class="row-top">
+              <text class="name">消息通知</text>
+              <text class="time" v-if="latestNotification">{{ formatTime(latestNotification.createdAt) }}</text>
+            </view>
+            <view class="row-bottom">
+              <text class="desc">{{ latestNotification ? latestNotification.title : '暂无新通知' }}</text>
+            </view>
+          </view>
+          <view class="unread-badge" v-if="unreadNotifyCount > 0">{{ unreadNotifyCount > 99 ? '99+' : unreadNotifyCount }}</view>
+          <text class="arrow">›</text>
+        </view>
+        
         <!-- AI 助手 (固定) -->
         <view class="session-item" @click="goAiChat">
           <view class="avatar-box">
@@ -74,7 +92,7 @@
 <script>
 import TabBar from '@/components/TabBar/TabBar.vue'
 import FloatingAI from '@/components/FloatingAI/FloatingAI.vue'
-import { apiGetConsultSessions } from '@/utils/request.js'
+import { apiGetConsultSessions, request } from '@/utils/request.js'
 import { isLoggedIn } from '@/utils/store.js'
 
 export default {
@@ -84,18 +102,38 @@ export default {
   },
   data() {
     return {
-      sessions: []
+      sessions: [],
+      unreadNotifyCount: 0,
+      latestNotification: null
     }
   },
   onShow() {
     if (isLoggedIn()) {
       this.loadSessions()
+      this.loadNotificationSummary()
     } else {
-        // 未登录清除列表
         this.sessions = []
+        this.unreadNotifyCount = 0
+        this.latestNotification = null
     }
   },
   methods: {
+    // 加载通知摘要
+    async loadNotificationSummary() {
+      try {
+        const res = await request({
+          url: '/api/v1/user/notifications/summary',
+          method: 'GET'
+        })
+        if (res.code === 200 && res.data) {
+          this.unreadNotifyCount = res.data.unreadCount || 0
+          this.latestNotification = res.data.latest || null
+        }
+      } catch (err) {
+        console.error('加载通知摘要失败:', err)
+      }
+    },
+    
     // 加载会话列表
     async loadSessions() {
       try {
@@ -106,6 +144,13 @@ export default {
       } catch (err) {
         console.error('加载会话失败:', err)
       }
+    },
+    
+    // 跳转消息通知
+    goNotifications() {
+      uni.navigateTo({
+        url: '/pages/notification/list'
+      })
     },
     
     // 跳转 AI 问诊
@@ -312,5 +357,36 @@ export default {
   text-align: center;
   color: #999;
   font-size: 24rpx;
+}
+
+/* 通知入口样式 */
+.notification-entry {
+  position: relative;
+  
+  .notify-bg {
+    background: linear-gradient(135deg, #FF9500 0%, #FF6B00 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    .notify-icon {
+      font-size: 48rpx;
+    }
+  }
+  
+  .unread-badge {
+    position: absolute;
+    right: 60rpx;
+    min-width: 36rpx;
+    height: 36rpx;
+    padding: 0 10rpx;
+    background: #FF4D4F;
+    border-radius: 18rpx;
+    color: #fff;
+    font-size: 22rpx;
+    line-height: 36rpx;
+    text-align: center;
+  }
 }
 </style>

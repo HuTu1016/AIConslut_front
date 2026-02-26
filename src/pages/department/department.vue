@@ -1,8 +1,5 @@
 <template>
   <view class="dept-container">
-    <!-- 返回按钮 -->
-
-    
     <!-- 搜索栏 -->
     <view class="search-bar">
       <view class="search-box">
@@ -12,21 +9,20 @@
           type="text" 
           v-model="searchText" 
           placeholder="搜索科室"
-          @input="handleSearch"
         />
       </view>
     </view>
     
-    <!-- 科室列表 -->
-    <view class="dept-list">
+    <!-- 子科室直接列表展示（从首页一级科室进入） -->
+    <view class="dept-list" v-if="parentId && !searchText">
       <view 
         class="dept-card" 
-        v-for="dept in filteredDepartments" 
+        v-for="dept in allDepartments" 
         :key="dept.id"
         @click="goDoctorList(dept)"
       >
         <view class="icon-wrapper">
-          <text class="icon">{{ dept.icon }}</text>
+          <text class="icon">{{ dept.icon || '🏥' }}</text>
         </view>
         <view class="info">
           <text class="name">{{ dept.name }}</text>
@@ -34,69 +30,138 @@
         </view>
         <text class="arrow">›</text>
       </view>
+      <view class="empty" v-if="allDepartments.length === 0">
+        <text class="text">暂无子科室</text>
+      </view>
+    </view>
+
+    <!-- 搜索结果 -->
+    <view class="dept-list" v-else-if="searchText">
+      <view 
+        class="dept-card" 
+        v-for="dept in searchResults" 
+        :key="dept.id"
+        @click="goDoctorList(dept)"
+      >
+        <view class="icon-wrapper">
+          <text class="icon">{{ dept.icon || '🏥' }}</text>
+        </view>
+        <view class="info">
+          <text class="name">{{ dept.name }}</text>
+          <text class="desc">{{ dept.description }}</text>
+        </view>
+        <text class="arrow">›</text>
+      </view>
+      <view class="empty" v-if="searchResults.length === 0">
+        <text class="text">未找到相关科室</text>
+      </view>
     </view>
     
-    <!-- 空状态 -->
-    <view class="empty" v-if="filteredDepartments.length === 0">
-      <text class="icon">🔍</text>
-      <text class="text">未找到相关科室</text>
+    <!-- 科室分类展示（全部科室页面） -->
+    <view class="dept-tree" v-else>
+      <view class="category-section" v-for="category in departmentTree" :key="category.id">
+        <view class="category-header" @click="toggleCategory(category.id)">
+          <text class="category-icon">{{ category.icon || '🏥' }}</text>
+          <text class="category-name">{{ category.name }}</text>
+          <text class="category-arrow" :class="{ expanded: expandedCategories.includes(category.id) }">›</text>
+        </view>
+        <view class="sub-dept-list" v-show="expandedCategories.includes(category.id)">
+          <view 
+            class="sub-dept-item" 
+            v-for="child in category.children" 
+            :key="child.id"
+            @click="goDoctorList(child)"
+          >
+            <text class="sub-icon">{{ child.icon || '🏥' }}</text>
+            <view class="sub-info">
+              <text class="sub-name">{{ child.name }}</text>
+              <text class="sub-desc">{{ child.description }}</text>
+            </view>
+            <text class="arrow">›</text>
+          </view>
+        </view>
+      </view>
     </view>
   </view>
 </template>
 
 <script>
-import { apiGetDepartments } from '@/utils/request.js'
-
-// 科室图标映射
-const DEPT_ICONS = {
-  'NEURO': '🧠',
-  'PEDI': '👶',
-  'CARDIO': '❤️',
-  'GASTRO': '🫁',
-  'ORTHO': '🦴',
-  'DERM': '🧴',
-  'GYNEC': '👩',
-  'OPHTH': '👁️'
-}
+import { request } from '@/utils/request.js'
 
 export default {
   data() {
     return {
       searchText: '',
-      departments: []
+      departmentTree: [],
+      allDepartments: [],
+      expandedCategories: [],
+      parentId: null,
+      parentName: ''
     }
   },
-  onLoad() {
-    this.loadDepartments()
+  onLoad(options) {
+    if (options.parentId) {
+      this.parentId = parseInt(options.parentId)
+      this.parentName = options.parentName || ''
+      // 设置导航栏标题
+      uni.setNavigationBarTitle({ title: this.parentName || '选择科室' })
+    }
+    this.loadDepartmentTree()
   },
   computed: {
-    filteredDepartments() {
-      if (!this.searchText) {
-        return this.departments
-      }
-      return this.departments.filter(dept => 
-        dept.name.includes(this.searchText) || 
-        (dept.description && dept.description.includes(this.searchText))
+    searchResults() {
+      if (!this.searchText) return []
+      const keyword = this.searchText.toLowerCase()
+      return this.allDepartments.filter(dept => 
+        dept.name.toLowerCase().includes(keyword) || 
+        (dept.description && dept.description.toLowerCase().includes(keyword))
       )
     }
   },
   methods: {
-    async loadDepartments() {
+    async loadDepartmentTree() {
       try {
-        const res = await apiGetDepartments()
-        if (res.data) {
-          this.departments = res.data.map(dept => ({
-            ...dept,
-            icon: DEPT_ICONS[dept.code] || '🏥'
-          }))
+        const res = await request({
+          url: '/api/v1/public/departments/tree',
+          method: 'GET'
+        })
+        if (res.code === 200 && res.data) {
+          // 如果有parentId参数，只展示该父科室下的子科室
+          if (this.parentId) {
+            const parent = res.data.find(d => d.id === this.parentId)
+            if (parent && parent.children) {
+              // 直接展示子科室列表模式
+              this.allDepartments = parent.children
+              this.departmentTree = [] // 不使用树形展示
+            }
+          } else {
+            // 全部科室树形展示
+            this.departmentTree = res.data
+            // 默认展开第一个分类
+            if (this.departmentTree.length > 0) {
+              this.expandedCategories = [this.departmentTree[0].id]
+            }
+            // 收集所有科室用于搜索
+            this.allDepartments = []
+            this.departmentTree.forEach(cat => {
+              if (cat.children) {
+                this.allDepartments.push(...cat.children)
+              }
+            })
+          }
         }
       } catch (err) {
         console.error('加载科室失败:', err)
       }
     },
     
-    handleSearch() {
-      // 搜索时自动过滤
+    toggleCategory(categoryId) {
+      const index = this.expandedCategories.indexOf(categoryId)
+      if (index > -1) {
+        this.expandedCategories.splice(index, 1)
+      } else {
+        this.expandedCategories.push(categoryId)
+      }
     },
     
     goDoctorList(dept) {
@@ -206,6 +271,91 @@ export default {
   .text {
     font-size: 28rpx;
     color: #999;
+  }
+}
+
+/* 科室树形分类样式 */
+.dept-tree {
+  padding: 20rpx 30rpx;
+  
+  .category-section {
+    margin-bottom: 20rpx;
+    background: #fff;
+    border-radius: 16rpx;
+    overflow: hidden;
+  }
+  
+  .category-header {
+    display: flex;
+    align-items: center;
+    padding: 30rpx;
+    background: linear-gradient(135deg, #4A90D9 0%, #67B8DE 100%);
+    
+    .category-icon {
+      font-size: 40rpx;
+      margin-right: 16rpx;
+    }
+    
+    .category-name {
+      flex: 1;
+      font-size: 32rpx;
+      font-weight: bold;
+      color: #fff;
+    }
+    
+    .category-arrow {
+      font-size: 32rpx;
+      color: #fff;
+      transition: transform 0.3s;
+      
+      &.expanded {
+        transform: rotate(90deg);
+      }
+    }
+  }
+  
+  .sub-dept-list {
+    .sub-dept-item {
+      display: flex;
+      align-items: center;
+      padding: 24rpx 30rpx;
+      border-bottom: 1rpx solid #F2F3F5;
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      .sub-icon {
+        font-size: 32rpx;
+        margin-right: 16rpx;
+      }
+      
+      .sub-info {
+        flex: 1;
+        
+        .sub-name {
+          display: block;
+          font-size: 28rpx;
+          font-weight: 500;
+          color: #1D2129;
+        }
+        
+        .sub-desc {
+          display: block;
+          margin-top: 6rpx;
+          font-size: 22rpx;
+          color: #86909C;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+      
+      .arrow {
+        font-size: 28rpx;
+        color: #C9CDD4;
+      }
+    }
   }
 }
 </style>

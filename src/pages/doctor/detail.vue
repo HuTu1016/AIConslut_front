@@ -132,6 +132,12 @@ export default {
       this.loadSchedules()
     }
     this.initDateList()
+    // 如果是预约跳转，提示用户选择排班
+    if (options.action === 'book') {
+      setTimeout(() => {
+        uni.showToast({ title: '请先选择就诊时间', icon: 'none', duration: 2000 })
+      }, 500)
+    }
   },
   methods: {
     // 加载医生详情

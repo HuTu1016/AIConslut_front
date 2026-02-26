@@ -81,41 +81,16 @@ export default {
         avatarUrl: '',
         online: true
       },
-      messages: [
-        {
-          id: 1,
-          senderRole: 'SYSTEM',
-          content: '问诊已开始，请描述您的症状',
-          createdAt: '2026-01-25T09:00:00'
-        },
-        {
-          id: 2,
-          senderRole: 'USER',
-          content: '医生您好，我最近经常头痛，持续一周了',
-          createdAt: '2026-01-25T09:05:00'
-        },
-        {
-          id: 3,
-          senderRole: 'DOCTOR',
-          content: '您好，请问头痛是持续性的还是间歇性的？有其他伴随症状吗？',
-          createdAt: '2026-01-25T09:07:00'
-        },
-        {
-          id: 4,
-          senderRole: 'USER',
-          content: '间歇性的，有时候会恶心',
-          createdAt: '2026-01-25T09:10:00'
-        },
-        {
-          id: 5,
-          senderRole: 'DOCTOR',
-          content: '建议您做个头部CT检查，排除器质性病变。平时注意休息，避免熬夜和过度用眼。',
-          createdAt: '2026-01-25T09:15:00'
-        }
-      ],
+      messages: [],
       inputText: '',
       scrollTop: 0,
-      timer: null
+      timer: null,
+      timeoutTimer: null,
+      // 问诊调度相关
+      hasCheckedIn: false,  // 是否已签到
+      consultStartTime: null,  // 问诊开始时间
+      remainingMinutes: 60,  // 剩余时间（分钟）
+      showTimeoutWarning: false  // 是否显示超时预警
     }
   },
   onLoad(options) {
@@ -131,18 +106,29 @@ export default {
     
     this.loadMessages()
     this.startPolling()
+    this.startTimeoutCheck()
   },
   onUnload() {
     this.stopPolling()
+    this.stopTimeoutCheck()
   },
   methods: {
     async loadMessages() {
       try {
-        // const res = await apiGetMessages({ appointmentId: this.appointmentId })
-        // this.messages = res.data.list
+        const res = await apiGetMessages(this.appointmentId)
+        if (res.code === 200 && res.data) {
+          this.messages = res.data
+          // 检查是否已签到（有USER发的消息）
+          if (!this.hasCheckedIn) {
+            const userMsg = this.messages.find(m => m.senderRole === 'USER')
+            if (userMsg) {
+              this.hasCheckedIn = true
+            }
+          }
+        }
         this.scrollToBottom()
         // 标记已读
-        // await apiMarkMessagesRead({ appointmentId: this.appointmentId })
+        await apiMarkMessagesRead({ appointmentId: this.appointmentId })
       } catch (err) {
         console.error('加载消息失败:', err)
       }
@@ -159,6 +145,39 @@ export default {
       if (this.timer) {
         clearInterval(this.timer)
         this.timer = null
+      }
+    },
+    
+    // 启动超时检测
+    startTimeoutCheck() {
+      this.timeoutTimer = setInterval(() => {
+        this.checkTimeout()
+      }, 60000) // 每分钟检查一次
+    },
+    
+    stopTimeoutCheck() {
+      if (this.timeoutTimer) {
+        clearInterval(this.timeoutTimer)
+        this.timeoutTimer = null
+      }
+    },
+    
+    // 检查问诊是否超时
+    checkTimeout() {
+      if (this.consultStartTime) {
+        const elapsed = Date.now() - new Date(this.consultStartTime).getTime()
+        const totalMinutes = 60 // 标准问诊时长
+        this.remainingMinutes = totalMinutes - Math.floor(elapsed / 60000)
+        
+        // 剩余5分钟内发出预警
+        if (this.remainingMinutes <= 5 && this.remainingMinutes > 0) {
+          this.showTimeoutWarning = true
+          uni.showModal({
+            title: '问诊时间提醒',
+            content: `您的问诊时间还剩${this.remainingMinutes}分钟，请抓紧时间`,
+            showCancel: false
+          })
+        }
       }
     },
     
@@ -182,6 +201,16 @@ export default {
           appointmentId: this.appointmentId,
           content: content
         })
+        
+        // 首次发消息 = 签到成功
+        if (!this.hasCheckedIn) {
+          this.hasCheckedIn = true
+          uni.showToast({
+            title: '已签到',
+            icon: 'success',
+            duration: 2000
+          })
+        }
       } catch (err) {
         console.error('发送失败:', err)
         uni.showToast({ title: '发送失败', icon: 'none' })
