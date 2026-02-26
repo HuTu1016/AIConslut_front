@@ -69,15 +69,15 @@
 </template>
 
 <script>
-import { apiSendMessage, apiGetMessages, apiMarkMessagesRead } from '@/utils/request.js'
+import { apiSendMessage, apiGetMessages, apiMarkMessagesRead, apiGetAppointmentDetail } from '@/utils/request.js'
 
 export default {
   data() {
     return {
       appointmentId: '',
       doctor: {
-        id: 1,
-        name: '张伟明',
+        id: '',
+        name: '',
         avatarUrl: '',
         online: true
       },
@@ -97,13 +97,8 @@ export default {
     if (options.appointmentId) {
       this.appointmentId = options.appointmentId
     }
-    if (options.doctorId) {
-      this.doctor.id = options.doctorId
-    }
-    if (options.doctorName) {
-      this.doctor.name = options.doctorName
-    }
-    
+    // 从预约详情中获取真实医生信息
+    this.loadDoctorInfo()
     this.loadMessages()
     this.startPolling()
     this.startTimeoutCheck()
@@ -113,6 +108,20 @@ export default {
     this.stopTimeoutCheck()
   },
   methods: {
+    /** 从预约详情获取医生信息 */
+    async loadDoctorInfo() {
+      if (!this.appointmentId) return
+      try {
+        const res = await apiGetAppointmentDetail(this.appointmentId)
+        if (res.code === 200 && res.data) {
+          this.doctor.id = res.data.doctorId
+          this.doctor.name = res.data.doctorName || '医生'
+          this.doctor.avatarUrl = res.data.doctorAvatar || ''
+        }
+      } catch (err) {
+        console.error('获取医生信息失败:', err)
+      }
+    },
     async loadMessages() {
       try {
         const res = await apiGetMessages(this.appointmentId)
@@ -128,7 +137,7 @@ export default {
         }
         this.scrollToBottom()
         // 标记已读
-        await apiMarkMessagesRead({ appointmentId: this.appointmentId })
+        await apiMarkMessagesRead(this.appointmentId)
       } catch (err) {
         console.error('加载消息失败:', err)
       }

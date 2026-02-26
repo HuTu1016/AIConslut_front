@@ -69,23 +69,21 @@
 </template>
 
 <script>
-import { apiGetConsultRecord } from '@/utils/request.js'
+import { apiGetConsultRecord, apiGetAppointmentDetail } from '@/utils/request.js'
 
 export default {
   data() {
     return {
       appointmentId: '',
       record: {
-        id: 1,
-        appointmentId: 1,
-        doctorName: '张伟明',
+        doctorName: '',
         doctorAvatar: '',
-        departmentName: '神经内科',
-        chiefComplaint: '间歇性头痛一周，伴恶心',
-        diagnosis: '偏头痛（疑似）',
-        prescription: '1. 布洛芬缓释胶囊 0.3g 每日2次\n2. 建议做头部CT检查',
-        aiAnalysis: 'AI分析：根据症状描述，偏头痛可能性较大(75%)，紧张性头痛可能性(20%)，需排除器质性病变',
-        createdAt: '2026-01-25 11:30'
+        departmentName: '',
+        chiefComplaint: '',
+        diagnosis: '',
+        prescription: '',
+        aiAnalysis: '',
+        createdAt: ''
       }
     }
   },
@@ -98,8 +96,18 @@ export default {
   methods: {
     async loadRecord() {
       try {
-        // const res = await apiGetConsultRecord(this.appointmentId)
-        // this.record = res.data
+        // 获取问诊记录
+        const res = await apiGetConsultRecord(this.appointmentId)
+        if (res.code === 200 && res.data) {
+          Object.assign(this.record, res.data)
+        }
+        // 获取预约详情中的医生信息
+        const apptRes = await apiGetAppointmentDetail(this.appointmentId)
+        if (apptRes.code === 200 && apptRes.data) {
+          this.record.doctorName = apptRes.data.doctorName || '医生'
+          this.record.doctorAvatar = apptRes.data.doctorAvatar || ''
+          this.record.departmentName = apptRes.data.departmentName || ''
+        }
       } catch (err) {
         console.error('加载病历失败:', err)
       }

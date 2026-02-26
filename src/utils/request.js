@@ -409,13 +409,12 @@ export function apiGetMessages(appointmentId) {
 
 /**
  * 标记消息已读
- * @param {Object} data 消息ID列表
+ * @param {number} appointmentId 预约ID
  */
-export function apiMarkMessagesRead(data) {
+export function apiMarkMessagesRead(appointmentId) {
   return request({
-    url: '/api/v1/user/consults/messages/read',
-    method: 'POST',
-    data
+    url: `/api/v1/user/consults/messages/read?appointmentId=${appointmentId}`,
+    method: 'POST'
   })
 }
 

@@ -153,24 +153,26 @@ export default {
       })
     },
     
-    // 开发模式快速登录（使用固定Mock用户数据）
+    // 开发模式快速登录（使用dev_mock_token，后端识别后绑定用户ID=1）
     async handleDevLogin() {
       this.loading = true
       
       try {
-        // 固定的开发测试用户数据
-        const mockUserData = {
-          token: 'dev_mock_token_' + Date.now(),
-          userInfo: {
-            id: 1,
-            nickname: '测试用户',
-            phone: '13800138000',
-            avatarUrl: '/static/default-avatar.png'
-          }
-        }
+        // 先保存 dev_mock_token 用于后端认证
+        const devToken = 'dev_mock_token_user_1'
+        uni.setStorageSync('token', devToken)
         
-        // 保存登录信息
-        saveLoginInfo(mockUserData)
+        // 从后端获取真实用户信息
+        const res = await apiGetUserInfo()
+        if (res.data) {
+          saveLoginInfo({
+            token: devToken,
+            userInfo: res.data
+          })
+        } else {
+          // 后端未返回用户信息时的基本保存
+          saveLoginInfo({ token: devToken, userInfo: { id: 1 } })
+        }
         
         uni.showToast({
           title: '登录成功',
