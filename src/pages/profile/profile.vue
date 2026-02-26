@@ -33,11 +33,11 @@
     
     <!-- 快捷功能 -->
     <view class="quick-stats" v-if="isLoggedIn">
-      <view class="stat-item" @click="goAppointments('pending')">
+      <view class="stat-item" @click="goAppointments('10')">
         <text class="num">{{ stats.pendingCount }}</text>
         <text class="label">待就诊</text>
       </view>
-      <view class="stat-item" @click="goAppointments('completed')">
+      <view class="stat-item" @click="goAppointments('30')">
         <text class="num">{{ stats.completedCount }}</text>
         <text class="label">已完成</text>
       </view>
@@ -99,7 +99,7 @@
 <script>
 import TabBar from '@/components/TabBar/TabBar.vue'
 import FloatingAI from '@/components/FloatingAI/FloatingAI.vue'
-import { apiGetUserInfo, apiGetUnreadCount, apiUploadAvatar } from '@/utils/request.js'
+import { apiGetUserInfo, apiGetUnreadCount, apiUploadAvatar, apiGetAppointmentStats } from '@/utils/request.js'
 import { getUserInfo, isLoggedIn, clearLoginInfo } from '@/utils/store.js'
 
 export default {
@@ -181,12 +181,20 @@ export default {
     
     async loadStats() {
       try {
-        const res = await apiGetUnreadCount()
-        if (res.data) {
-          this.stats.unreadCount = res.data.count || res.data || 0
+        // 并行请求预约统计和未读消息数
+        const [statsRes, unreadRes] = await Promise.all([
+          apiGetAppointmentStats().catch(() => null),
+          apiGetUnreadCount().catch(() => null)
+        ])
+        if (statsRes && statsRes.data) {
+          this.stats.pendingCount = statsRes.data.pendingCount || 0
+          this.stats.completedCount = statsRes.data.completedCount || 0
+        }
+        if (unreadRes && unreadRes.data) {
+          this.stats.unreadCount = unreadRes.data.count || unreadRes.data || 0
         }
       } catch (err) {
-        console.error('获取未读消息失败:', err)
+        console.error('获取统计数据失败:', err)
       }
     },
     

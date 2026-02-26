@@ -247,11 +247,11 @@ export default {
     },
     
     goArticleList() {
-      uni.showToast({ title: '资讯列表开发中', icon: 'none' })
+      uni.navigateTo({ url: '/pages/article/list' })
     },
     
     goArticleDetail(article) {
-      uni.showToast({ title: '资讯详情开发中', icon: 'none' })
+      uni.navigateTo({ url: `/pages/article/detail?id=${article.id}` })
     },
     
     formatTime(time) {

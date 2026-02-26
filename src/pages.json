@@ -148,6 +148,18 @@
 			"style": {
 				"navigationBarTitleText": "评价问诊"
 			}
+		},
+		{
+			"path": "pages/article/list",
+			"style": {
+				"navigationBarTitleText": "健康资讯"
+			}
+		},
+		{
+			"path": "pages/article/detail",
+			"style": {
+				"navigationBarTitleText": "资讯详情"
+			}
 		}
 	],
 	"globalStyle": {

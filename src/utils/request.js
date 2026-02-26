@@ -295,6 +295,16 @@ export function apiGetAppointments(params) {
 }
 
 /**
+ * 获取预约数量统计（待就诊、已完成）
+ */
+export function apiGetAppointmentStats() {
+  return request({
+    url: '/api/v1/user/appointments/stats',
+    method: 'GET'
+  })
+}
+
+/**
  * 创建预约
  * @param {Object} data 预约信息
  */
