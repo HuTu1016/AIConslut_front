@@ -212,6 +212,18 @@ export function apiGetDoctorDetail(id) {
 }
 
 /**
+ * 搜索医生（按姓名、擅长、科室）
+ * @param {string} keyword 搜索关键词
+ */
+export function apiSearchDoctors(keyword) {
+  return request({
+    url: '/api/v1/public/search/doctors',
+    method: 'GET',
+    data: { keyword }
+  })
+}
+
+/**
  * 查询医生一周排班
  * @param {number} doctorId 医生ID
  */
@@ -219,6 +231,17 @@ export function apiGetDoctorSchedules(doctorId) {
   return request({
     url: `/api/v1/public/schedules/doctor/${doctorId}/week`,
     method: 'GET'
+  })
+}
+
+/**
+ * 模拟支付成功（测试用）
+ * @param {number} appointmentId 预约ID
+ */
+export function apiMockPay(appointmentId) {
+  return request({
+    url: `/api/v1/user/payments/mock-pay/${appointmentId}`,
+    method: 'POST'
   })
 }
 
@@ -302,6 +325,17 @@ export function apiCancelAppointment(id) {
   return request({
     url: `/api/v1/user/appointments/${id}/cancel`,
     method: 'POST'
+  })
+}
+
+/**
+ * 删除预约记录（仅已取消/已退款状态可操作）
+ * @param {number} id 预约ID
+ */
+export function apiDeleteAppointment(id) {
+  return request({
+    url: `/api/v1/user/appointments/${id}`,
+    method: 'DELETE'
   })
 }
 

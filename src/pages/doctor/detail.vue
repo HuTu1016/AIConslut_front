@@ -119,7 +119,20 @@ export default {
   },
   computed: {
     currentShifts() {
-      return this.schedules.filter(s => s.scheduleDate === this.selectedDate)
+      const shifts = this.schedules.filter(s => s.scheduleDate === this.selectedDate)
+      // 前端兜底：当天已过期的时段不展示
+      const today = new Date()
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      if (this.selectedDate === todayStr) {
+        const nowMinutes = today.getHours() * 60 + today.getMinutes()
+        return shifts.filter(s => {
+          // endTime 格式为 "HH:mm" 或 "HH:mm:ss"
+          const endParts = (s.endTime || '').split(':')
+          const endMinutes = parseInt(endParts[0] || 0) * 60 + parseInt(endParts[1] || 0)
+          return endMinutes > nowMinutes
+        })
+      }
+      return shifts
     },
     canBook() {
       return this.selectedDate && this.selectedShift
@@ -200,9 +213,22 @@ export default {
     
     // 根据排班数据更新日期可用状态
     updateDateAvailability() {
+      const today = new Date()
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      const nowMinutes = today.getHours() * 60 + today.getMinutes()
+      
       this.dateList.forEach(date => {
         const daySchedules = this.schedules.filter(s => s.scheduleDate === date.value)
-        date.available = daySchedules.some(s => s.usedQuota < s.quota && s.status === 1)
+        date.available = daySchedules.some(s => {
+          if (s.usedQuota >= s.quota || s.status !== 1) return false
+          // 当天的排班需要检查时段是否已过期
+          if (date.value === todayStr) {
+            const endParts = (s.endTime || '').split(':')
+            const endMinutes = parseInt(endParts[0] || 0) * 60 + parseInt(endParts[1] || 0)
+            return endMinutes > nowMinutes
+          }
+          return true
+        })
       })
       
       // 默认选中第一个有号的日期

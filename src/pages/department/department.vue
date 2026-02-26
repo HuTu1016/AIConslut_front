@@ -70,7 +70,7 @@
             class="sub-dept-item" 
             v-for="child in category.children" 
             :key="child.id"
-            @click="goDoctorList(child)"
+            @click="goDoctorList(child, category)"
           >
             <text class="sub-icon">{{ child.icon || '🏥' }}</text>
             <view class="sub-info">
@@ -141,11 +141,17 @@ export default {
             if (this.departmentTree.length > 0) {
               this.expandedCategories = [this.departmentTree[0].id]
             }
-            // 收集所有科室用于搜索
+            // 收集所有科室用于搜索，附带父科室信息
             this.allDepartments = []
             this.departmentTree.forEach(cat => {
               if (cat.children) {
-                this.allDepartments.push(...cat.children)
+                cat.children.forEach(child => {
+                  this.allDepartments.push({
+                    ...child,
+                    _parentId: cat.id,
+                    _parentName: cat.name
+                  })
+                })
               }
             })
           }
@@ -164,10 +170,15 @@ export default {
       }
     },
     
-    goDoctorList(dept) {
-      uni.navigateTo({
-        url: `/pages/doctor/list?deptId=${dept.id}&deptName=${dept.name}`
-      })
+    goDoctorList(dept, parentCategory) {
+      // 确定父科室信息：优先传入的parentCategory > dept自身携带的 > 页面级parentId
+      const pid = parentCategory ? parentCategory.id : (dept._parentId || this.parentId)
+      const pname = parentCategory ? parentCategory.name : (dept._parentName || this.parentName)
+      let url = `/pages/doctor/list?deptId=${dept.id}&deptName=${encodeURIComponent(dept.name)}`
+      if (pid) {
+        url += `&parentId=${pid}&parentName=${encodeURIComponent(pname)}`
+      }
+      uni.navigateTo({ url })
     }
   }
 }

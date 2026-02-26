@@ -261,7 +261,9 @@ export default {
     },
     
     goSearch() {
-      uni.showToast({ title: '搜索功能开发中', icon: 'none' })
+      uni.navigateTo({
+        url: '/pages/search/search'
+      })
     },
     
     goAiConsult() {
@@ -284,17 +286,17 @@ export default {
     },
     
     goDoctorList(dept) {
-      // 如果是一级科室（有子科室），跳转到科室页面展示子科室
-      if (dept.children && dept.children.length > 0) {
+      if (!dept.id) {
+        // 无具体科室（如banner"去咨询"），跳转全部医生列表
         uni.navigateTo({
-          url: `/pages/department/department?parentId=${dept.id}&parentName=${dept.name}`
+          url: '/pages/doctor/list'
         })
-      } else {
-        // 二级科室直接跳转医生列表
-        uni.navigateTo({
-          url: `/pages/doctor/list?deptId=${dept.id || ''}&deptName=${dept.name || ''}`
-        })
+        return
       }
+      // 首页展示的是一级科室，统一跳转到科室页面展示子科室
+      uni.navigateTo({
+        url: `/pages/department/department?parentId=${dept.id}&parentName=${encodeURIComponent(dept.name)}`
+      })
     },
     
     goDoctorDetail(doctor) {

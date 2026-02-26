@@ -35,6 +35,12 @@
 			}
 		},
 		{
+			"path": "pages/search/search",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/department/department",
 			"style": {
 				"navigationBarTitleText": "科室列表"
@@ -80,6 +86,12 @@
 			"path": "pages/consult/chat",
 			"style": {
 				"navigationBarTitleText": "在线问诊"
+			}
+		},
+		{
+			"path": "pages/consult/waiting",
+			"style": {
+				"navigationBarTitleText": "排队等候"
 			}
 		},
 		{

@@ -91,7 +91,7 @@
 </template>
 
 <script>
-import { apiCreateAppointment, apiCreatePayment, apiGetDoctorDetail } from '@/utils/request.js'
+import { apiCreateAppointment, apiCreatePayment, apiGetDoctorDetail, apiMockPay } from '@/utils/request.js'
 
 export default {
   data() {
@@ -169,7 +169,7 @@ export default {
       this.loading = true
       
       try {
-        // 1. 创建预约订单
+        // 1. 创建预约订单（状态为0-待支付，后端同时发送15分钟延时取消消息到MQ）
         const appointmentRes = await apiCreateAppointment({
           doctorId: this.doctorId,
           scheduleId: this.scheduleId,
@@ -180,26 +180,26 @@ export default {
         
         const appointmentId = appointmentRes.data.id
         
-        // 2. 创建支付订单
-        const paymentRes = await apiCreatePayment({
-          appointmentId: appointmentId
-        })
-        
-        // 3. 调起微信支付
-        const payParams = paymentRes.data
-        
-        // 模拟支付成功（实际需要调用微信支付）
+        // 2. 弹出支付确认
         uni.showModal({
           title: '模拟支付',
-          content: `支付金额：¥${this.doctor.consultPrice}`,
-          confirmText: '支付成功',
+          content: `支付金额：¥${this.doctor.consultPrice}\n（15分钟内未支付将自动取消）`,
+          confirmText: '确认支付',
           cancelText: '取消支付',
-          success: (res) => {
+          success: async (res) => {
             if (res.confirm) {
-              uni.redirectTo({
-                url: `/pages/payment/result?status=success&appointmentId=${appointmentId}`
-              })
+              // 确认支付：调用模拟支付接口，更新状态为10（待就诊）
+              try {
+                await apiMockPay(appointmentId)
+                uni.redirectTo({
+                  url: `/pages/payment/result?status=success&appointmentId=${appointmentId}`
+                })
+              } catch (payErr) {
+                console.error('支付失败:', payErr)
+                uni.showToast({ title: payErr.message || '支付失败', icon: 'none' })
+              }
             } else {
+              // 取消支付：status保持0（待支付），15分钟后MQ自动取消
               uni.redirectTo({
                 url: `/pages/payment/result?status=pending&appointmentId=${appointmentId}`
               })

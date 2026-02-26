@@ -28,13 +28,15 @@
 </template>
 
 <script>
+import { apiGetAppointmentDetail } from '@/utils/request.js'
+
 export default {
   data() {
     return {
       status: 'success',
       appointmentId: '',
-      ticketNo: 'APT20260125001',
-      amount: 50
+      ticketNo: '',
+      amount: 0
     }
   },
   onLoad(options) {
@@ -43,9 +45,22 @@ export default {
     }
     if (options.appointmentId) {
       this.appointmentId = options.appointmentId
+      this.loadAppointmentInfo()
     }
   },
   methods: {
+    async loadAppointmentInfo() {
+      try {
+        const res = await apiGetAppointmentDetail(this.appointmentId)
+        if (res.data) {
+          this.ticketNo = res.data.ticketNo || ''
+          this.amount = res.data.amount || 0
+        }
+      } catch (err) {
+        console.error('加载预约信息失败:', err)
+      }
+    },
+    
     goAppointments() {
       uni.redirectTo({
         url: '/pages/appointment/list'
