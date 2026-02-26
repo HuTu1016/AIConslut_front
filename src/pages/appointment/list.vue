@@ -15,73 +15,77 @@
     
     <!-- 预约列表 -->
     <scroll-view class="appointment-scroll" scroll-y @scrolltolower="loadMore">
-      <!-- uni-swipe-action 容器：仅对已取消/已退款启用左滑删除 -->
-      <uni-swipe-action>
-        <uni-swipe-action-item
-          v-for="item in filteredList"
-          :key="item.id"
-          :disabled="item.status !== 40 && item.status !== 50"
-          :right-options="swipeDeleteOptions"
-          @click="handleSwipeAction(item, $event)"
-        >
-          <view 
-            class="appointment-card" 
-            @click="goDetail(item)"
-          >
-            <view class="card-header">
-              <text class="ticket-no">{{ item.ticketNo }}</text>
-              <text class="status" :class="'status-' + item.status">{{ getStatusText(item.status) }}</text>
+      <view 
+        class="appointment-card" 
+        v-for="item in filteredList"
+        :key="item.id"
+        @click="goDetail(item)"
+      >
+        <view class="card-header">
+          <text class="ticket-no">{{ item.ticketNo }}</text>
+          <text class="status" :class="'status-' + item.status">{{ getStatusText(item.status) }}</text>
+        </view>
+        
+        <view class="card-body">
+          <image class="avatar" :src="item.doctorAvatar || '/static/default-avatar.png'" mode="aspectFill"></image>
+          <view class="info">
+            <view class="name-row">
+              <text class="name">{{ item.doctorName }}</text>
+              <text class="title">{{ item.doctorTitle }}</text>
             </view>
-            
-            <view class="card-body">
-              <image class="avatar" :src="item.doctorAvatar || '/static/default-avatar.png'" mode="aspectFill"></image>
-              <view class="info">
-                <view class="name-row">
-                  <text class="name">{{ item.doctorName }}</text>
-                  <text class="title">{{ item.doctorTitle }}</text>
-                </view>
-                <text class="dept">{{ item.departmentName }}</text>
-                <text class="patient">就诊人：{{ item.patientName }}</text>
-              </view>
-            </view>
-            
-            <view class="card-footer">
-              <view class="time-info">
-                <text class="label">预约时间</text>
-                <text class="time">{{ formatTime(item.appointmentTime) }}</text>
-              </view>
-              <view class="actions">
-                <!-- 待支付状态：显示支付和取消按钮 -->
-                <template v-if="item.status === 0">
-                  <button class="btn btn-cancel" @click.stop="handleCancel(item)">取消</button>
-                  <button class="btn btn-primary" @click.stop="handlePay(item)">去支付</button>
-                </template>
-                
-                <!-- 待就诊状态：显示排队等候按钮 -->
-                <template v-else-if="item.status === 10">
-                  <button class="btn btn-cancel" @click.stop="handleCancel(item)">取消</button>
-                  <button class="btn btn-primary" @click.stop="goWaiting(item)">排队等候</button>
-                </template>
-                
-                <!-- 就诊中状态 -->
-                <template v-else-if="item.status === 20">
-                  <button class="btn btn-primary" @click.stop="goConsult(item)">继续问诊</button>
-                </template>
-                
-                <!-- 已完成状态：查看病历 -->
-                <template v-else-if="item.status === 30">
-                  <button class="btn btn-outline" @click.stop="goRecord(item)">查看病历</button>
-                </template>
-
-                <!-- 已取消/已退款：提示左滑删除 -->
-                <template v-else-if="item.status === 40 || item.status === 50">
-                  <text class="swipe-hint">← 左滑删除</text>
-                </template>
-              </view>
-            </view>
+            <text class="dept">{{ item.departmentName }}</text>
+            <text class="patient">就诊人：{{ item.patientName }}</text>
           </view>
-        </uni-swipe-action-item>
-      </uni-swipe-action>
+        </view>
+        
+        <view class="card-footer">
+          <view class="time-info">
+            <!-- 待支付状态：显示倒计时 -->
+            <template v-if="item.status === 0">
+              <text class="label countdown-label">请在</text>
+              <text class="countdown-value">{{ getCountdownText(item) }}</text>
+              <text class="label countdown-label">内支付</text>
+            </template>
+            <template v-else>
+              <text class="label">预约时间</text>
+              <text class="time">{{ formatTime(item.appointmentTime) }}</text>
+              <text class="expired-tag" v-if="item.status === 10 && isExpired(item)">已过期</text>
+            </template>
+          </view>
+          <view class="actions">
+            <!-- 待支付状态：显示支付和取消按钮 -->
+            <template v-if="item.status === 0">
+              <button class="btn btn-cancel" @click.stop="handleCancel(item)">取消</button>
+              <button class="btn btn-primary" @click.stop="handlePay(item)">去支付</button>
+            </template>
+            
+            <!-- 待就诊状态：未过期显示排队，已过期显示更多 -->
+            <template v-else-if="item.status === 10 && !isExpired(item)">
+              <button class="btn btn-cancel" @click.stop="handleCancel(item)">取消</button>
+              <button class="btn btn-primary" @click.stop="goWaiting(item)">排队等候</button>
+            </template>
+            <template v-else-if="item.status === 10 && isExpired(item)">
+              <button class="btn btn-cancel" @click.stop="handleMore(item)">更多</button>
+            </template>
+            
+            <!-- 就诊中状态 -->
+            <template v-else-if="item.status === 20">
+              <button class="btn btn-primary" @click.stop="goConsult(item)">继续问诊</button>
+            </template>
+            
+            <!-- 已完成状态：查看病历 + 更多 -->
+            <template v-else-if="item.status === 30">
+              <button class="btn btn-outline" @click.stop="goRecord(item)">查看病历</button>
+              <button class="btn btn-cancel" @click.stop="handleMore(item)">更多</button>
+            </template>
+
+            <!-- 已取消/已退款：显示"更多"操作按钮 -->
+            <template v-else-if="item.status === 40 || item.status === 50">
+              <button class="btn btn-cancel" @click.stop="handleMore(item)">更多</button>
+            </template>
+          </view>
+        </view>
+      </view>
       
       <!-- 空状态 -->
       <view class="empty" v-if="!loading && filteredList.length === 0">
@@ -99,7 +103,10 @@
 </template>
 
 <script>
-import { apiGetAppointments, apiCancelAppointment, apiDeleteAppointment, request } from '@/utils/request.js'
+import { apiGetAppointments, apiCancelAppointment, apiDeleteAppointment, apiRefundAppointment, request } from '@/utils/request.js'
+
+// 自动取消超时时长（毫秒），与后端 RabbitMQConfig.ORDER_TTL 一致
+const PAY_TIMEOUT_MS = 15 * 60 * 1000
 
 export default {
   data() {
@@ -118,10 +125,9 @@ export default {
       page: 1,
       pageSize: 10,
       hasMore: true,
-      // 左滑删除按钮配置
-      swipeDeleteOptions: [
-        { text: '删除', style: { backgroundColor: '#FF4D4F', color: '#fff' } }
-      ]
+      // 倒计时刷新定时器
+      countdownTimer: null,
+      now: Date.now()
     }
   },
   computed: {
@@ -137,8 +143,40 @@ export default {
       this.currentTab = options.status
     }
     this.loadData()
+    // 每秒刷新一次 now，驱动倒计时更新
+    this.countdownTimer = setInterval(() => {
+      this.now = Date.now()
+    }, 1000)
+  },
+  onUnload() {
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer)
+      this.countdownTimer = null
+    }
   },
   methods: {
+    /**
+     * 获取待支付订单的倒计时文本 mm:ss
+     * 基于 item.createdAt + 15分钟 计算
+     */
+    getCountdownText(item) {
+      const createdAt = new Date(item.createdAt).getTime()
+      const deadline = createdAt + PAY_TIMEOUT_MS
+      const remaining = Math.floor((deadline - this.now) / 1000)
+      if (remaining <= 0) return '00:00'
+      const m = Math.floor(remaining / 60)
+      const s = remaining % 60
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    },
+
+    /**
+     * 判断待就诊订单是否已过期（预约时间已过）
+     */
+    isExpired(item) {
+      if (!item.appointmentTime) return false
+      return new Date(item.appointmentTime).getTime() < this.now
+    },
+
     async loadData(isLoadMore = false) {
       if (this.loading) return
       if (isLoadMore && !this.hasMore) return
@@ -258,13 +296,55 @@ export default {
     },
 
     /**
-     * 处理左滑操作点击（只有「删除」一个选项）
+     * 点击"更多"触发菜单，根据订单状态动态显示操作项
+     * - 已过期待就诊(10) / 已完成(30)：申请退款 + 删除订单
+     * - 已取消(40) / 已退款(50)：删除订单
      */
-    handleSwipeAction(item, e) {
-      // uni-swipe-action-item 的 @click 回调 e.content 为所点击按钮
-      if (e && e.content && e.content.text === '删除') {
-        this.confirmDelete(item)
-      }
+    handleMore(item) {
+      // 根据状态构建菜单项
+      const canRefund = item.status === 10 || item.status === 30
+      const menuItems = canRefund ? ['申请退款', '删除订单'] : ['删除订单']
+
+      uni.showActionSheet({
+        itemList: menuItems,
+        itemColor: '#FF4D4F',
+        success: (res) => {
+          const selected = menuItems[res.tapIndex]
+          if (selected === '申请退款') {
+            this.confirmRefund(item)
+          } else if (selected === '删除订单') {
+            this.confirmDelete(item)
+          }
+        }
+      })
+    },
+
+    /**
+     * 二次确认并执行退款
+     */
+    confirmRefund(item) {
+      uni.showModal({
+        title: '申请退款',
+        content: `确定要申请退款￥${item.amount || 0}吗？`,
+        confirmText: '确认退款',
+        confirmColor: '#FF4D4F',
+        success: async (res) => {
+          if (res.confirm) {
+            try {
+              uni.showLoading({ title: '处理中...' })
+              await apiRefundAppointment(item.id)
+              uni.hideLoading()
+              uni.showToast({ title: '退款成功', icon: 'success' })
+              // 更新本地状态为已退款
+              item.status = 50
+            } catch (err) {
+              uni.hideLoading()
+              console.error('退款失败:', err)
+              uni.showToast({ title: err.message || '退款失败', icon: 'none' })
+            }
+          }
+        }
+      })
     },
 
     /**
@@ -273,7 +353,7 @@ export default {
     confirmDelete(item) {
       uni.showModal({
         title: '删除预约',
-        content: '确定删除此条已取消的预约记录？',
+        content: '确定删除此条不再需要的预约记录吗？',
         confirmText: '删除',
         confirmColor: '#FF4D4F',
         success: async (res) => {
@@ -283,7 +363,7 @@ export default {
               await apiDeleteAppointment(item.id)
               uni.hideLoading()
               uni.showToast({ title: '已删除', icon: 'success' })
-              // 从本地列表中移除，避免重新请求
+              // 从本地列表中移除
               const idx = this.list.findIndex(i => i.id === item.id)
               if (idx !== -1) {
                 this.list.splice(idx, 1)
@@ -373,11 +453,6 @@ export default {
 .appointment-scroll {
   flex: 1;
   padding: 20rpx;
-}
-
-/* uni-swipe-action-item 撑满宽度 */
-:deep(uni-swipe-action-item) {
-  display: block;
 }
 
 .appointment-card {
@@ -487,6 +562,9 @@ export default {
     border-top: 1rpx solid #f0f0f0;
     
     .time-info {
+      display: flex;
+      align-items: baseline;
+
       .label {
         display: block;
         font-size: 24rpx;
@@ -499,18 +577,37 @@ export default {
         color: #333;
         margin-top: 4rpx;
       }
+
+      /* 倒计时样式 */
+      .countdown-label {
+        font-size: 24rpx;
+        color: #E8A87C;
+      }
+
+      .countdown-value {
+        font-size: 30rpx;
+        font-weight: bold;
+        color: #FF4D4F;
+        margin: 0 6rpx;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* 已过期标签 */
+      .expired-tag {
+        display: inline-block;
+        font-size: 22rpx;
+        color: #fff;
+        background: #FF4D4F;
+        padding: 2rpx 12rpx;
+        border-radius: 6rpx;
+        margin-left: 12rpx;
+      }
     }
     
     .actions {
       display: flex;
       align-items: center;
       gap: 16rpx;
-
-      /* 左滑提示文字 */
-      .swipe-hint {
-        font-size: 24rpx;
-        color: #bbb;
-      }
       
       .btn {
         height: 60rpx;

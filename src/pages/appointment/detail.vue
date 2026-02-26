@@ -1,13 +1,20 @@
 <template>
   <view class="detail-container">
-    <!-- 返回按钮 -->
-
-    
     <!-- 状态卡片 -->
     <view class="status-card" :class="'status-' + appointment.status">
       <text class="status-icon">{{ getStatusIcon(appointment.status) }}</text>
       <text class="status-text">{{ getStatusText(appointment.status) }}</text>
-      <text class="status-desc">{{ getStatusDesc(appointment.status) }}</text>
+      <!-- 待支付状态：显示实时倒计时 -->
+      <text class="status-desc" v-if="appointment.status === 0 && countdown > 0">
+        请在 {{ countdownText }} 内支付
+      </text>
+      <text class="status-desc" v-else-if="appointment.status === 0 && countdown <= 0">
+        支付超时，订单即将自动取消
+      </text>
+      <text class="status-desc" v-else-if="appointment.status === 10 && isAppointmentExpired">
+        预约时间已过，等待系统自动取消
+      </text>
+      <text class="status-desc" v-else>{{ getStatusDesc(appointment.status) }}</text>
     </view>
     
     <!-- 医生信息 -->
@@ -61,9 +68,12 @@
       </template>
       
       <!-- 待就诊 -->
-      <template v-else-if="appointment.status === 10">
+      <template v-else-if="appointment.status === 10 && !isAppointmentExpired">
         <button class="btn btn-cancel" @click="handleCancel">取消预约</button>
         <button class="btn btn-primary" @click="goConsult">进入问诊</button>
+      </template>
+      <template v-else-if="appointment.status === 10 && isAppointmentExpired">
+        <button class="btn btn-cancel full" @click="handleCancel">取消预约</button>
       </template>
       
       <!-- 就诊中 -->
@@ -83,25 +93,30 @@
 <script>
 import { apiGetAppointmentDetail, apiCancelAppointment } from '@/utils/request.js'
 
+// 自动取消超时时长（毫秒），与后端 RabbitMQConfig.ORDER_TTL 保持一致
+const PAY_TIMEOUT_MS = 15 * 60 * 1000
+
 export default {
   data() {
     return {
       appointmentId: '',
-      appointment: {
-        id: 1,
-        ticketNo: 'APT20260125001',
-        doctorId: 1,
-        doctorName: '张伟明',
-        doctorTitle: '主任医师',
-        doctorAvatar: '',
-        departmentName: '神经内科',
-        patientName: '张三',
-        patientPhone: '138****8001',
-        appointmentTime: '2026-01-25 09:00',
-        amount: 50,
-        status: 10,
-        payStatus: 1
-      }
+      appointment: {},
+      countdown: 0, // 剩余秒数
+      timer: null
+    }
+  },
+  computed: {
+    /** 判断待就诊订单预约时间是否已过 */
+    isAppointmentExpired() {
+      if (!this.appointment.appointmentTime) return false
+      return new Date(this.appointment.appointmentTime).getTime() < Date.now()
+    },
+    /** 将剩余秒数格式化为 mm:ss */
+    countdownText() {
+      if (this.countdown <= 0) return '00:00'
+      const m = Math.floor(this.countdown / 60)
+      const s = this.countdown % 60
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
     }
   },
   onLoad(options) {
@@ -110,16 +125,54 @@ export default {
       this.loadDetail()
     }
   },
+  onUnload() {
+    // 页面销毁时清除定时器
+    this.clearTimer()
+  },
   methods: {
     async loadDetail() {
       try {
         const res = await apiGetAppointmentDetail(this.appointmentId)
         if (res.data) {
           this.appointment = res.data
+          // 待支付状态启动倒计时
+          if (this.appointment.status === 0) {
+            this.startCountdown()
+          }
         }
       } catch (err) {
         console.error('加载详情失败:', err)
         uni.showToast({ title: '加载详情失败', icon: 'none' })
+      }
+    },
+
+    /**
+     * 启动支付倒计时
+     * 根据 createdAt + 15分钟 计算剩余时间
+     */
+    startCountdown() {
+      this.clearTimer()
+      const createdAt = new Date(this.appointment.createdAt).getTime()
+      const deadline = createdAt + PAY_TIMEOUT_MS
+      const remaining = Math.floor((deadline - Date.now()) / 1000)
+      this.countdown = remaining > 0 ? remaining : 0
+
+      if (this.countdown <= 0) return
+
+      this.timer = setInterval(() => {
+        this.countdown--
+        if (this.countdown <= 0) {
+          this.clearTimer()
+          // 倒计时结束，刷新页面获取最新状态
+          this.loadDetail()
+        }
+      }, 1000)
+    },
+
+    clearTimer() {
+      if (this.timer) {
+        clearInterval(this.timer)
+        this.timer = null
       }
     },
     
@@ -149,7 +202,6 @@ export default {
     
     getStatusDesc(status) {
       const map = {
-        0: '请在30分钟内完成支付',
         10: '请按时就诊，医生将在预约时间等候您',
         20: '问诊进行中，请注意查看医生回复',
         30: '感谢您的信任，祝您身体健康',
@@ -174,6 +226,7 @@ export default {
             try {
               await apiCancelAppointment(this.appointmentId)
               uni.showToast({ title: '取消成功', icon: 'success' })
+              this.clearTimer()
               this.appointment.status = 40
             } catch (err) {
               console.error('取消失败:', err)

@@ -1,12 +1,17 @@
 <template>
   <view class="result-container">
-    <!-- 返回按钮 -->
-
-    
     <view class="result-card" :class="status">
       <text class="icon">{{ status === 'success' ? '✅' : '⏳' }}</text>
       <text class="title">{{ status === 'success' ? '支付成功' : '待支付' }}</text>
-      <text class="desc">{{ status === 'success' ? '预约已生效，请按时就诊' : '请尽快完成支付' }}</text>
+      <!-- 待支付：显示实时倒计时 -->
+      <view class="countdown-row" v-if="status === 'pending' && countdown > 0">
+        <text class="countdown-label">请在</text>
+        <text class="countdown-value">{{ countdownText }}</text>
+        <text class="countdown-label">内支付</text>
+      </view>
+      <text class="desc" v-else-if="status === 'pending' && countdown === 0">支付超时，订单即将自动取消</text>
+      <text class="desc" v-else-if="status === 'pending'">请稍候...</text>
+      <text class="desc" v-else>预约已生效，请按时就诊</text>
     </view>
     
     <view class="info-card">
@@ -30,13 +35,27 @@
 <script>
 import { apiGetAppointmentDetail } from '@/utils/request.js'
 
+// 与后端 RabbitMQConfig.ORDER_TTL 一致
+const PAY_TIMEOUT_MS = 15 * 60 * 1000
+
 export default {
   data() {
     return {
       status: 'success',
       appointmentId: '',
       ticketNo: '',
-      amount: 0
+      amount: 0,
+      countdown: -1, // -1=未加载, 0=已超时, >0=剩余秒数
+      timer: null
+    }
+  },
+  computed: {
+    /** 将剩余秒数格式化为 mm:ss */
+    countdownText() {
+      if (this.countdown <= 0) return '00:00'
+      const m = Math.floor(this.countdown / 60)
+      const s = this.countdown % 60
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
     }
   },
   onLoad(options) {
@@ -48,6 +67,9 @@ export default {
       this.loadAppointmentInfo()
     }
   },
+  onUnload() {
+    this.clearTimer()
+  },
   methods: {
     async loadAppointmentInfo() {
       try {
@@ -55,9 +77,41 @@ export default {
         if (res.data) {
           this.ticketNo = res.data.ticketNo || ''
           this.amount = res.data.amount || 0
+          // 待支付状态启动倒计时
+          if (this.status === 'pending') {
+            this.startCountdown(res.data.createdAt)
+          }
         }
       } catch (err) {
         console.error('加载预约信息失败:', err)
+      }
+    },
+
+    /**
+     * 根据创建时间启动倒计时
+     */
+    startCountdown(createdAt) {
+      this.clearTimer()
+      // 如果createdAt为空，用当前时间减去14分钟作为兆底（至少显示1分钟倒计时）
+      const created = createdAt ? new Date(createdAt).getTime() : (Date.now() - 14 * 60 * 1000)
+      const deadline = created + PAY_TIMEOUT_MS
+      const remaining = Math.floor((deadline - Date.now()) / 1000)
+      this.countdown = remaining > 0 ? remaining : 0
+
+      if (this.countdown <= 0) return
+
+      this.timer = setInterval(() => {
+        this.countdown--
+        if (this.countdown <= 0) {
+          this.clearTimer()
+        }
+      }, 1000)
+    },
+
+    clearTimer() {
+      if (this.timer) {
+        clearInterval(this.timer)
+        this.timer = null
       }
     },
     
@@ -122,6 +176,26 @@ export default {
     font-size: 28rpx;
     color: #999;
     margin-top: 16rpx;
+  }
+
+  /* 倒计时行 */
+  .countdown-row {
+    display: flex;
+    align-items: baseline;
+    margin-top: 16rpx;
+
+    .countdown-label {
+      font-size: 28rpx;
+      color: #E8A87C;
+    }
+
+    .countdown-value {
+      font-size: 36rpx;
+      font-weight: bold;
+      color: #FF4D4F;
+      margin: 0 8rpx;
+      font-variant-numeric: tabular-nums;
+    }
   }
 }
 

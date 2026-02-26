@@ -340,6 +340,17 @@ export function apiDeleteAppointment(id) {
 }
 
 /**
+ * 申请退款（待就诊/已完成状态可操作）
+ * @param {number} id 预约ID
+ */
+export function apiRefundAppointment(id) {
+  return request({
+    url: `/api/v1/user/appointments/${id}/refund`,
+    method: 'POST'
+  })
+}
+
+/**
  * 创建支付订单
  * @param {Object} data 支付信息
  */

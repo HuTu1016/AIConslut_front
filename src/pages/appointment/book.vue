@@ -91,7 +91,7 @@
 </template>
 
 <script>
-import { apiCreateAppointment, apiCreatePayment, apiGetDoctorDetail, apiMockPay } from '@/utils/request.js'
+import { apiCreateAppointment, apiCreatePayment, apiGetDoctorDetail, apiMockPay, apiGetUserInfo } from '@/utils/request.js'
 
 export default {
   data() {
@@ -133,6 +133,8 @@ export default {
     if (options.time) {
       this.scheduleInfo.time = decodeURIComponent(options.time)
     }
+    // 加载用户信息预填姓名和手机号
+    this.loadUserInfo()
   },
   methods: {
     async loadDoctorInfo() {
@@ -144,6 +146,25 @@ export default {
       } catch (err) {
         console.error('加载医生信息失败:', err)
         uni.showToast({ title: '加载医生信息失败', icon: 'none' })
+      }
+    },
+
+    /** 加载用户信息，预填就诊人姓名和手机号 */
+    async loadUserInfo() {
+      try {
+        const res = await apiGetUserInfo()
+        if (res.data) {
+          // 姓名：使用真实姓名 realName
+          if (!this.form.patientName && res.data.realName) {
+            this.form.patientName = res.data.realName
+          }
+          // 手机号：使用 phoneEncrypted（去除 ENC_ 前缀）
+          if (!this.form.patientPhone && res.data.phoneEncrypted) {
+            this.form.patientPhone = String(res.data.phoneEncrypted).replace(/^ENC_/, '')
+          }
+        }
+      } catch (err) {
+        console.error('加载用户信息失败:', err)
       }
     },
     
