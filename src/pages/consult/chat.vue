@@ -18,12 +18,14 @@
       class="chat-area" 
       scroll-y 
       :scroll-top="scrollTop"
+      :scroll-into-view="scrollIntoViewId"
       :scroll-with-animation="true"
     >
       <view class="message-list">
         <view 
           v-for="(msg, index) in messages" 
           :key="index" 
+          :id="'msg-' + msg.id"
           class="message-item"
           :class="msg.senderRole === 'USER' ? 'user-message' : 'doctor-message'"
         >
@@ -41,6 +43,12 @@
             <view class="bubble">
               <text class="content">{{ msg.content }}</text>
               <text class="time">{{ formatTime(msg.createdAt) }}</text>
+            </view>
+            
+            <!-- 用户自己发的消息，在气泡左侧显示已读状态 -->
+            <view class="read-status" v-if="msg.senderRole === 'USER'">
+              <text v-if="msg.isRead === 1" class="is-read"><text class="green-dot"></text>已读</text>
+              <text v-else class="unread">未读</text>
             </view>
             
 
@@ -98,7 +106,9 @@ export default {
       consultStartTime: null,  // 问诊开始时间
       remainingMinutes: 60,
       showTimeoutWarning: false,
-      appointmentStatus: 20  // 当前预约状态
+      appointmentStatus: 20,  // 当前预约状态
+      scrollIntoViewId: '',
+      isFirstLoad: true
     }
   },
   onLoad(options) {
@@ -142,8 +152,26 @@ export default {
               this.hasCheckedIn = true
             }
           }
+          
+          if (this.isFirstLoad) {
+            this.isFirstLoad = false
+            // 定位到第一条发给用户的未读消息处
+            const firstUnread = this.messages.find(m => m.isRead === 0 && m.senderRole !== 'USER')
+            if (firstUnread) {
+              this.$nextTick(() => {
+                this.scrollIntoViewId = 'msg-' + firstUnread.id
+              })
+            } else {
+              this.scrollToBottom()
+            }
+          } else {
+            // 如果是轮询或后续发送产生的新消息，滚动到底部
+            if (this.messages.length > 0) {
+              this.scrollToBottom()
+            }
+          }
         }
-        this.scrollToBottom()
+        
         // 标记已读
         await apiMarkMessagesRead(this.appointmentId)
       } catch (err) {
@@ -152,10 +180,10 @@ export default {
     },
     
     startPolling() {
-      // 每5秒轮询新消息
+      // 每2秒轮询新消息
       this.timer = setInterval(() => {
         this.loadMessages()
-      }, 5000)
+      }, 2000)
     },
     
     stopPolling() {
@@ -285,6 +313,7 @@ export default {
   flex-direction: column;
   height: 100vh;
   background-color: #F5F7FA;
+  overflow: hidden;
 }
 
 .chat-header {
@@ -293,6 +322,8 @@ export default {
   padding: 20rpx 30rpx;
   background: #fff;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+  z-index: 10;
   
   .avatar {
     width: 80rpx;
@@ -337,7 +368,9 @@ export default {
 
 .chat-area {
   flex: 1;
+  height: 0;
   padding: 20rpx;
+  box-sizing: border-box;
 }
 
 .message-item {
@@ -401,6 +434,7 @@ export default {
   max-width: 60%;
   padding: 20rpx 28rpx;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  position: relative;
   
   .content {
     font-size: 30rpx;
@@ -416,6 +450,33 @@ export default {
   }
 }
 
+.read-status {
+  display: flex;
+  align-items: flex-end;
+  margin-right: 12rpx;
+  margin-bottom: 4rpx;
+  font-size: 20rpx;
+  
+  .is-read {
+    color: #999;
+    display: flex;
+    align-items: center;
+  }
+  
+  .green-dot {
+    display: inline-block;
+    width: 12rpx;
+    height: 12rpx;
+    background-color: #52C41A;
+    border-radius: 50%;
+    margin-right: 6rpx;
+  }
+  
+  .unread {
+    color: #4A90D9;
+  }
+}
+
 .input-area {
   display: flex;
   align-items: center;
@@ -424,6 +485,8 @@ export default {
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
   background: #fff;
   box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.03);
+  flex-shrink: 0;
+  z-index: 10;
   
   .input-box {
     flex: 1;
@@ -459,6 +522,8 @@ export default {
   background: linear-gradient(135deg, #FFF7E6, #FFF1CC);
   padding: 24rpx 30rpx;
   border-top: 1rpx solid #FFD666;
+  flex-shrink: 0;
+  z-index: 10;
 
   .end-confirm-text {
     display: block;
