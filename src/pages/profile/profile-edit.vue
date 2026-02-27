@@ -2,7 +2,7 @@
   <view class="profile-edit-container" @click="exitEditMode">
     <!-- 档案信息区域 -->
     <view class="avatar-section" @click="chooseAvatar">
-      <image class="avatar" :src="form.avatarUrl || '/static/default-avatar.png'" mode="aspectFill"></image>
+      <image class="avatar" :src="$resolveImage(form.avatarUrl)" mode="aspectFill"></image>
       <view class="avatar-tip">点击更换头像</view>
       <view class="info-text">
 
@@ -69,17 +69,7 @@
       </view>
     </view>
 
-    <!-- 健康档案入口 -->
-    <view class="section">
-      <view class="section-title">健康档案</view>
-      <view class="form-group">
-        <view class="form-item" @click="goHealthProfile">
-          <text class="label">健康档案管理</text>
-          <text class="value">体检报告、病史、用药、过敏</text>
-          <text class="arrow">›</text>
-        </view>
-      </view>
-    </view>
+
 
     <!-- 生活习惯 -->
     <view class="section">
@@ -443,9 +433,7 @@ export default {
         return []
       }
     },
-    goHealthProfile() {
-      uni.navigateTo({ url: '/pages/health/index' })
-    },
+
     calculateAge(birthdate) {
       if (!birthdate) return '未知'
       const birth = new Date(birthdate)

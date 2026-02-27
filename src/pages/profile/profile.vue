@@ -7,7 +7,7 @@
         <view class="avatar-wrapper" @click="isLoggedIn && goEditProfile()">
           <image 
             class="avatar" 
-            :src="userInfo.avatarUrl || '/static/default-avatar.png'" 
+            :src="$resolveImage(userInfo.avatarUrl)" 
             mode="aspectFill"
           ></image>
         </view>
@@ -66,14 +66,7 @@
       </view>
     </view>
     
-    <view class="menu-section">
-      <view class="menu-item" @click="goHealthProfile">
-        <text class="icon">📝</text>
-        <text class="label">个人档案</text>
-        <text class="arrow">›</text>
-      </view>
 
-          </view>
     
     <view class="menu-section">
       <view class="menu-item" @click="showAbout">
@@ -271,13 +264,7 @@ export default {
       })
     },
     
-    goHealthProfile() {
-      if (!this.isLoggedIn) {
-        this.goLogin()
-        return
-      }
-      uni.navigateTo({ url: '/pages/health/index' })
-    },
+
     
     showAbout() {
       uni.showModal({

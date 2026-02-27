@@ -143,10 +143,7 @@
           <view class="func-icon-wrap"><text class="func-icon">📁</text></view>
           <text class="func-text">文件</text>
         </view>
-        <view class="func-btn" @click="syncProfile" :class="{ active: profileSynced }">
-          <view class="func-icon-wrap"><text class="func-icon">📋</text></view>
-          <text class="func-text">{{ profileSynced ? '已同步' : '档案' }}</text>
-        </view>
+
       </view>
     </view>
 
@@ -198,14 +195,14 @@ export default {
       messages: [
         {
           role: 'ai',
-          content: '你好！我是你的AI医疗助手。\n\n💡 提示：点击下方"发送档案"可以让我更好地了解您的健康状况，提供更个性化的建议。\n\n请告诉我您哪里不舒服,或者描述您的症状。',
+          content: '你好！我是你的AI医疗助手。\n\n请告诉我您哪里不舒服，或者描述您的症状。',
           isTyping: false
         }
       ],
       inputText: '',
       isStreaming: false,
       scrollTop: 0,
-      profileSynced: false,
+
       baseUrl: BASE_URL + '/api/v1/user/ai',
       
       // 功能面板相关
@@ -334,7 +331,7 @@ export default {
               isTyping: false
             }
           ];
-          this.profileSynced = false;
+
           this.includeHistory = false;
           this.closeDrawer();
           // 刷新列表
@@ -514,49 +511,7 @@ export default {
       return `${date.getMonth() + 1}/${date.getDate()}`;
     },
     
-    /**
-     * 同步个人档案
-     */
-    syncProfile() {
-      if (this.profileSynced) {
-        uni.showToast({ title: '档案已同步', icon: 'none' });
-        return;
-      }
-      
-      const token = uni.getStorageSync('token');
-      if (!token) {
-        uni.showToast({ title: '请先登录', icon: 'none' });
-        return;
-      }
-      
-      uni.showLoading({ title: '同步中...' });
-      
-      const _this = this;
-      uni.request({
-        url: this.baseUrl + '/sync-profile',
-        method: 'POST',
-        header: { 'Authorization': `Bearer ${token}` },
-        success: (res) => {
-          uni.hideLoading();
-          if (res && res.statusCode === 200 && res.data && res.data.code === 200) {
-            _this.profileSynced = true;
-            _this.messages.push({
-              role: 'system',
-              content: '✅ 已同步个人健康档案，AI将结合您的病史、过敏史等信息进行分析'
-            });
-            _this.scrollToBottom();
-            uni.showToast({ title: '同步成功', icon: 'success' });
-          } else {
-            uni.showToast({ title: res?.data?.message || '同步失败', icon: 'none' });
-          }
-        },
-        fail: (err) => {
-          uni.hideLoading();
-          console.error('同步档案失败', err);
-          uni.showToast({ title: '网络错误', icon: 'none' });
-        }
-      });
-    },
+
     
     /**
      * 切换功能面板显示
@@ -813,9 +768,7 @@ export default {
       const requestBody = {
         sessionId: this.currentSessionId,
         question: question,
-        context: this.getContext(),
-        includeProfile: this.profileSynced,
-        includeHistory: this.includeHistory
+        context: this.getContext()
       };
       
       const requestTask = uni.request({

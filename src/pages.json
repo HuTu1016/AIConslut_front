@@ -108,36 +108,6 @@
 			}
 		},
 		{
-			"path": "pages/health/index",
-			"style": {
-				"navigationBarTitleText": "个人档案"
-			}
-		},
-		{
-			"path": "pages/health/report-upload",
-			"style": {
-				"navigationBarTitleText": "上传报告"
-			}
-		},
-		{
-			"path": "pages/health/history-add",
-			"style": {
-				"navigationBarTitleText": "添加病史"
-			}
-		},
-		{
-			"path": "pages/health/medication-add",
-			"style": {
-				"navigationBarTitleText": "添加用药"
-			}
-		},
-		{
-			"path": "pages/health/allergy-add",
-			"style": {
-				"navigationBarTitleText": "添加过敏"
-			}
-		},
-		{
 			"path": "pages/notification/list",
 			"style": {
 				"navigationBarTitleText": "消息通知"
