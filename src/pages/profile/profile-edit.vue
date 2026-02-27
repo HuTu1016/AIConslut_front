@@ -69,7 +69,95 @@
       </view>
     </view>
 
+    <!-- 过敏史 -->
+    <view class="section">
+      <view class="section-title">过敏史</view>
+      <view class="form-group">
+        <view class="form-item column">
+          <view class="tags-container">
+            <view 
+              v-for="(tag, index) in allergyOptions" 
+              :key="index"
+              class="tag"
+              :class="{ 
+                active: form.allergyHistory.includes(tag),
+                editing: editingField === 'allergyHistory' && tag !== '无' && tag !== '其他'
+              }"
+              @click.stop="toggleTag('allergyHistory', tag)"
+              @touchstart="handleTouchStart('allergyHistory')"
+              @touchend="handleTouchEnd"
+            >
+              {{ tag }}
+              <view 
+                class="close-btn" 
+                v-if="editingField === 'allergyHistory' && tag !== '无' && tag !== '其他'"
+                @click.stop="deleteTag(tag, 'allergyHistory', 'allergyOptions')"
+              >×</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
 
+    <!-- 慢病史 -->
+    <view class="section">
+      <view class="section-title">慢病史</view>
+      <view class="form-group">
+        <view class="form-item column">
+          <view class="tags-container">
+            <view 
+              v-for="(tag, index) in chronicOptions" 
+              :key="index"
+              class="tag"
+              :class="{ 
+                active: form.chronicDisease.includes(tag),
+                editing: editingField === 'chronicDisease' && tag !== '无' && tag !== '其他'
+              }"
+              @click.stop="toggleTag('chronicDisease', tag)"
+              @touchstart="handleTouchStart('chronicDisease')"
+              @touchend="handleTouchEnd"
+            >
+              {{ tag }}
+              <view 
+                class="close-btn" 
+                v-if="editingField === 'chronicDisease' && tag !== '无' && tag !== '其他'"
+                @click.stop="deleteTag(tag, 'chronicDisease', 'chronicOptions')"
+              >×</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 手术/外伤史 -->
+    <view class="section">
+      <view class="section-title">手术/外伤史</view>
+      <view class="form-group">
+        <view class="form-item column">
+          <view class="tags-container">
+            <view 
+              v-for="(tag, index) in surgeryOptions" 
+              :key="index"
+              class="tag"
+              :class="{ 
+                active: form.surgeryHistory.includes(tag),
+                editing: editingField === 'surgeryHistory' && tag !== '无' && tag !== '其他'
+              }"
+              @click.stop="toggleTag('surgeryHistory', tag)"
+              @touchstart="handleTouchStart('surgeryHistory')"
+              @touchend="handleTouchEnd"
+            >
+              {{ tag }}
+              <view 
+                class="close-btn" 
+                v-if="editingField === 'surgeryHistory' && tag !== '无' && tag !== '其他'"
+                @click.stop="deleteTag(tag, 'surgeryHistory', 'surgeryOptions')"
+              >×</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
 
     <!-- 生活习惯 -->
     <view class="section">

@@ -49,6 +49,16 @@
     
     <!-- 功能菜单 -->
     <view class="menu-section">
+      <view class="menu-item" @click="handleVerifyIdentity">
+        <text class="icon">🛡️</text>
+        <text class="label">实名认证</text>
+        <view class="verify-status" v-if="isVerified">
+          <text class="verified-text">已认证</text>
+          <text class="id-masked">{{ maskedIdCard }}</text>
+        </view>
+        <text class="verify-status unverified" v-else>未认证</text>
+        <text class="arrow">›</text>
+      </view>
       <view class="menu-item" @click="goAppointments('')">
         <text class="icon">📋</text>
         <text class="label">我的预约</text>
@@ -86,13 +96,37 @@
     
     <!-- 全局悬浮球 -->
     <FloatingAI />
+    
+    <!-- 实名认证弹窗 -->
+    <view class="modal-mask" v-if="showVerifyModal" @click="showVerifyModal = false">
+      <view class="modal-content" @click.stop>
+        <view class="modal-header">
+          <text class="modal-title">实名认证</text>
+          <text class="modal-close" @click="showVerifyModal = false">×</text>
+        </view>
+        <view class="modal-body">
+          <view class="form-item">
+            <text class="form-label">真实姓名</text>
+            <input class="form-input" v-model="verifyForm.realName" placeholder="请输入真实姓名" />
+          </view>
+          <view class="form-item">
+            <text class="form-label">身份证号</text>
+            <input class="form-input" v-model="verifyForm.idCard" placeholder="请输入18位身份证号" maxlength="18" />
+          </view>
+        </view>
+        <view class="modal-footer">
+          <button class="btn-cancel" @click="showVerifyModal = false">取消</button>
+          <button class="btn-confirm" @click="submitVerify" :loading="verifyLoading">确认认证</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script>
 import TabBar from '@/components/TabBar/TabBar.vue'
 import FloatingAI from '@/components/FloatingAI/FloatingAI.vue'
-import { apiGetUserInfo, apiGetUnreadCount, apiUploadAvatar, apiGetAppointmentStats } from '@/utils/request.js'
+import { apiGetUserInfo, apiGetUnreadCount, apiUploadAvatar, apiGetAppointmentStats, apiVerifyIdentity } from '@/utils/request.js'
 import { getUserInfo, isLoggedIn, clearLoginInfo } from '@/utils/store.js'
 
 export default {
@@ -108,6 +142,13 @@ export default {
         pendingCount: 0,
         completedCount: 0,
         unreadCount: 0
+      },
+      // 实名认证
+      showVerifyModal: false,
+      verifyLoading: false,
+      verifyForm: {
+        realName: '',
+        idCard: ''
       }
     }
   },
@@ -140,6 +181,14 @@ export default {
       
       const totalFields = fieldsToCheck.length + arrayFields.length
       return Math.round((filledCount / totalFields) * 100)
+    },
+    isVerified() {
+      return !!(this.userInfo.idCardEncrypted && this.userInfo.idCardEncrypted.length > 0)
+    },
+    maskedIdCard() {
+      const id = this.userInfo.idCardEncrypted
+      if (!id || id.length < 8) return ''
+      return id.substring(0, 3) + '***********' + id.substring(id.length - 4)
     }
   },
   onShow() {
@@ -272,6 +321,47 @@ export default {
         content: '版本: 1.0.0\n\nAI智慧问诊是一款基于人工智能的在线医疗健康服务平台，为您提供便捷的在线问诊、预约挂号等服务。',
         showCancel: false
       })
+    },
+    
+    handleVerifyIdentity() {
+      if (this.isVerified) {
+        uni.showModal({
+          title: '实名认证',
+          content: `姓名：${this.userInfo.realName}\n身份证：${this.maskedIdCard}\n\n您已完成实名认证`,
+          showCancel: false
+        })
+        return
+      }
+      this.verifyForm.realName = this.userInfo.realName || ''
+      this.verifyForm.idCard = ''
+      this.showVerifyModal = true
+    },
+    
+    async submitVerify() {
+      if (!this.verifyForm.realName.trim()) {
+        uni.showToast({ title: '请输入真实姓名', icon: 'none' })
+        return
+      }
+      if (!/^\d{17}[\dXx]$/.test(this.verifyForm.idCard.trim())) {
+        uni.showToast({ title: '身份证号格式不正确', icon: 'none' })
+        return
+      }
+      
+      this.verifyLoading = true
+      try {
+        await apiVerifyIdentity({
+          realName: this.verifyForm.realName.trim(),
+          idCard: this.verifyForm.idCard.trim()
+        })
+        uni.showToast({ title: '认证成功', icon: 'success' })
+        this.showVerifyModal = false
+        // 刷新用户信息
+        await this.loadUserInfo()
+      } catch (err) {
+        uni.showToast({ title: err.message || '认证失败', icon: 'none' })
+      } finally {
+        this.verifyLoading = false
+      }
     },
     
     handleLogout() {
@@ -506,6 +596,132 @@ export default {
   
   &::after {
     border: none;
+  }
+}
+
+/* 实名认证状态 */
+.verify-status {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-right: 10rpx;
+  
+  .verified-text {
+    font-size: 22rpx;
+    color: #67c23a;
+    background: rgba(103, 194, 58, 0.1);
+    padding: 4rpx 12rpx;
+    border-radius: 20rpx;
+  }
+  
+  .id-masked {
+    font-size: 24rpx;
+    color: #999;
+  }
+  
+  &.unverified {
+    font-size: 24rpx;
+    color: #e6a23c;
+    margin-right: 10rpx;
+  }
+}
+
+/* 认证弹窗 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-content {
+  width: 80%;
+  background: #fff;
+  border-radius: 24rpx;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  
+  .modal-title {
+    font-size: 32rpx;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .modal-close {
+    font-size: 40rpx;
+    color: #999;
+    line-height: 1;
+  }
+}
+
+.modal-body {
+  padding: 30rpx;
+  
+  .form-item {
+    margin-bottom: 24rpx;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  .form-label {
+    display: block;
+    font-size: 26rpx;
+    color: #666;
+    margin-bottom: 12rpx;
+  }
+  
+  .form-input {
+    width: 100%;
+    height: 80rpx;
+    padding: 0 20rpx;
+    border: 1rpx solid #ddd;
+    border-radius: 12rpx;
+    font-size: 28rpx;
+    box-sizing: border-box;
+  }
+}
+
+.modal-footer {
+  display: flex;
+  padding: 20rpx 30rpx 30rpx;
+  gap: 20rpx;
+  
+  .btn-cancel, .btn-confirm {
+    flex: 1;
+    height: 80rpx;
+    line-height: 80rpx;
+    border-radius: 40rpx;
+    font-size: 28rpx;
+    text-align: center;
+    
+    &::after {
+      border: none;
+    }
+  }
+  
+  .btn-cancel {
+    background: #f5f5f5;
+    color: #666;
+  }
+  
+  .btn-confirm {
+    background: linear-gradient(135deg, #4A90D9, #67B8DE);
+    color: #fff;
   }
 }
 </style>

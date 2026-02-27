@@ -115,7 +115,8 @@ export default {
         patientName: '',
         patientPhone: '',
         symptom: ''
-      }
+      },
+      userVerified: false
     }
   },
   onLoad(options) {
@@ -154,6 +155,7 @@ export default {
       try {
         const res = await apiGetUserInfo()
         if (res.data) {
+          this.userVerified = !!(res.data.idCardEncrypted && res.data.idCardEncrypted.length > 0)
           // 姓名：使用真实姓名 realName
           if (!this.form.patientName && res.data.realName) {
             this.form.patientName = res.data.realName
@@ -186,6 +188,22 @@ export default {
     
     async handleSubmit() {
       if (!this.validateForm()) return
+      
+      // 实名认证校验
+      if (!this.userVerified) {
+        uni.showModal({
+          title: '实名认证',
+          content: '您尚未完成实名认证，挂号前需先实名认证。是否前往认证？',
+          confirmText: '去认证',
+          cancelText: '取消',
+          success: (res) => {
+            if (res.confirm) {
+              uni.switchTab({ url: '/pages/profile/profile' })
+            }
+          }
+        })
+        return
+      }
       
       this.loading = true
       

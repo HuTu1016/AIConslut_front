@@ -283,6 +283,18 @@ export function apiUpdateUserInfo(data) {
 }
 
 /**
+ * 实名认证
+ * @param {Object} data { realName, idCard }
+ */
+export function apiVerifyIdentity(data) {
+  return request({
+    url: '/api/v1/user/verify-identity',
+    method: 'POST',
+    data
+  })
+}
+
+/**
  * 获取预约列表
  * @param {Object} params 分页参数
  */
