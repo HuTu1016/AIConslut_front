@@ -196,7 +196,7 @@ export default {
           scheduleId: this.scheduleId,
           patientName: this.form.patientName,
           patientPhone: this.form.patientPhone,
-          symptom: this.form.symptom
+          symptomDescription: this.form.symptom
         })
         
         const appointmentId = appointmentRes.data.id
@@ -213,7 +213,7 @@ export default {
               try {
                 await apiMockPay(appointmentId)
                 uni.redirectTo({
-                  url: `/pages/payment/result?status=success&appointmentId=${appointmentId}`
+                  url: `/pages/consult/waiting?appointmentId=${appointmentId}`
                 })
               } catch (payErr) {
                 console.error('支付失败:', payErr)

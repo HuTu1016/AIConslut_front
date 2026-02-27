@@ -1,155 +1,147 @@
 <template>
   <view class="waiting-container">
-    <!-- 顶部状态 -->
-    <view class="status-card" :class="statusClass">
-      <text class="status-icon">{{ statusIcon }}</text>
-      <text class="status-title">{{ statusTitle }}</text>
-      <text class="status-desc">{{ statusDesc }}</text>
-    </view>
+    <!-- 顶部背景 -->
+    <view class="top-bg"></view>
 
-    <!-- 排队信息 -->
-    <view class="queue-card" v-if="status === 'waiting'">
-      <view class="queue-position">
-        <text class="position-label">当前排队位置</text>
-        <text class="position-number">第 {{ queuePosition }} 位</text>
+    <view class="content-wrapper">
+      <!-- 排队号卡片 -->
+      <view class="queue-card">
+        <view class="queue-header">
+          <text class="queue-label">您的排队号</text>
+        </view>
+        <view class="queue-number">
+          <text class="number">{{ queuePosition }}</text>
+          <text class="unit">号</text>
+        </view>
+        <view class="queue-meta">
+          <view class="meta-item">
+            <text class="meta-value">{{ aheadCount }}</text>
+            <text class="meta-label">前面等候</text>
+          </view>
+          <view class="meta-divider"></view>
+          <view class="meta-item">
+            <text class="meta-value">{{ estimateWaitText }}</text>
+            <text class="meta-label">预计等候</text>
+          </view>
+          <view class="meta-divider"></view>
+          <view class="meta-item">
+            <text class="meta-value" :class="statusClass">{{ statusText }}</text>
+            <text class="meta-label">当前状态</text>
+          </view>
+        </view>
       </view>
-      <view class="queue-info">
-        <view class="info-item">
-          <text class="label">预约时间</text>
-          <text class="value">{{ appointmentTime }}</text>
+
+      <!-- 医生信息 -->
+      <view class="info-card">
+        <view class="card-title">就诊信息</view>
+        <view class="info-row">
+          <text class="info-label">医生</text>
+          <text class="info-value">{{ doctorName }}</text>
         </view>
-        <view class="info-item">
-          <text class="label">就诊医生</text>
-          <text class="value">{{ doctorName }}</text>
+        <view class="info-row">
+          <text class="info-label">科室</text>
+          <text class="info-value">{{ departmentName }}</text>
         </view>
-        <view class="info-item">
-          <text class="label">预约单号</text>
-          <text class="value">{{ ticketNo }}</text>
+        <view class="info-row">
+          <text class="info-label">预约单号</text>
+          <text class="info-value">{{ ticketNo }}</text>
         </view>
+      </view>
+
+      <!-- 温馨提示 -->
+      <view class="tips-card">
+        <text class="tips-title">📌 温馨提示</text>
+        <text class="tips-item">1. 请留意排队叫号，医生接诊后会推送通知</text>
+        <text class="tips-item">2. 叫号后请在5分钟内进入咨询室</text>
+        <text class="tips-item">3. 问诊时段内均可候诊，无需按精确时间到达</text>
+      </view>
+
+      <!-- 已接诊提示 -->
+      <view class="consult-ready" v-if="appointmentStatus === 20">
+        <text class="ready-icon">🔔</text>
+        <text class="ready-text">医生已接诊，请进入咨询室</text>
+        <button class="ready-btn" @click="goChat">进入咨询室</button>
       </view>
     </view>
 
-    <!-- 叫号提示 -->
-    <view class="called-card" v-if="status === 'called'">
-      <text class="called-icon">🔔</text>
-      <text class="called-text">轮到您就诊了！</text>
-      <text class="called-hint">请尽快进入问诊聊天室</text>
-      <button class="enter-btn" @click="enterChat">进入聊天室</button>
-    </view>
-
-    <!-- 温馨提示 -->
-    <view class="tips" v-if="status === 'waiting'">
-      <text class="tips-title">温馨提示</text>
-      <text class="tips-item">1. 请保持页面打开，叫号时会自动弹窗提醒</text>
-      <text class="tips-item">2. 如需离开页面，叫号通知也会通过消息推送</text>
-      <text class="tips-item">3. 叫到号后请在5分钟内进入聊天室</text>
-    </view>
-
-    <!-- 底部按钮 -->
-    <view class="bottom-actions">
-      <button class="btn-outline" @click="goAppointments">查看预约</button>
-      <button class="btn-outline" @click="goHome">返回首页</button>
+    <!-- 底部操作 -->
+    <view class="bottom-bar">
+      <button class="btn-back" @click="goHome">返回首页</button>
     </view>
   </view>
 </template>
 
 <script>
-import { apiGetAppointmentDetail } from '@/utils/request.js'
-import { connectNotifyWs, closeNotifyWs, onNotify, offNotify } from '@/utils/notify-ws.js'
+import { apiGetQueueInfo } from '@/utils/request.js'
 
 export default {
   data() {
     return {
       appointmentId: '',
-      status: 'waiting', // waiting / called
       queuePosition: 0,
-      appointmentTime: '',
+      aheadCount: 0,
+      appointmentStatus: 10,
       doctorName: '',
+      doctorId: '',
+      departmentName: '',
       ticketNo: '',
-      userId: ''
+      pollTimer: null
     }
   },
   computed: {
+    estimateWaitText() {
+      if (this.appointmentStatus === 20) return '已到号'
+      const minutes = this.aheadCount * 10
+      if (minutes === 0) return '即将叫号'
+      if (minutes < 60) return `约${minutes}分钟`
+      return `约${Math.round(minutes / 60)}小时`
+    },
+    statusText() {
+      const map = { 0: '待支付', 10: '候诊中', 20: '已接诊', 25: '问诊中', 30: '已完成', 40: '已取消' }
+      return map[this.appointmentStatus] || '候诊中'
+    },
     statusClass() {
-      return this.status === 'called' ? 'called' : 'waiting'
-    },
-    statusIcon() {
-      return this.status === 'called' ? '🔔' : '⏳'
-    },
-    statusTitle() {
-      return this.status === 'called' ? '轮到您了' : '排队等候中'
-    },
-    statusDesc() {
-      if (this.status === 'called') return '请立即进入问诊聊天室'
-      return this.queuePosition > 0 ? `前面还有 ${this.queuePosition - 1} 人` : '正在获取排队信息...'
+      if (this.appointmentStatus === 20) return 'status-active'
+      if (this.appointmentStatus === 30) return 'status-done'
+      return ''
     }
   },
   onLoad(options) {
     if (options.appointmentId) {
       this.appointmentId = options.appointmentId
-      this.loadAppointmentInfo()
+      this.loadQueueInfo()
+      this.pollTimer = setInterval(() => this.loadQueueInfo(), 10000)
     }
-    // 获取用户ID（开发模式使用1）
-    this.userId = uni.getStorageSync('userId') || '1'
-    
-    // 连接通知 WebSocket
-    connectNotifyWs(this.userId)
-    
-    // 监听叫号和排队变动
-    onNotify('CALL_NUMBER', this.handleCallNumber)
-    onNotify('QUEUE_UPDATE', this.handleQueueUpdate)
   },
   onUnload() {
-    // 移除监听（不关闭WS连接，其他页面可能还需要）
-    offNotify('CALL_NUMBER', this.handleCallNumber)
-    offNotify('QUEUE_UPDATE', this.handleQueueUpdate)
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer)
+      this.pollTimer = null
+    }
   },
   methods: {
-    async loadAppointmentInfo() {
+    async loadQueueInfo() {
       try {
-        const res = await apiGetAppointmentDetail(this.appointmentId)
-        if (res.data) {
-          this.ticketNo = res.data.ticketNo || ''
-          this.appointmentTime = res.data.appointmentTime || ''
-          this.doctorName = res.data.doctorName || ''
-          this.queuePosition = res.data.queuePosition || 0
-          // 如果已经是就诊中状态，直接显示叫号
-          if (res.data.status === 20) {
-            this.status = 'called'
-          }
+        const res = await apiGetQueueInfo(this.appointmentId)
+        if (res.code === 200 && res.data) {
+          const d = res.data
+          this.queuePosition = d.queuePosition || 0
+          this.appointmentStatus = d.status
+          this.ticketNo = d.ticketNo || ''
+          this.doctorName = d.doctorName || ''
+          this.doctorId = d.doctorId || ''
+          this.departmentName = d.departmentName || ''
+          this.aheadCount = d.aheadCount !== undefined ? d.aheadCount : Math.max(0, this.queuePosition - 1)
         }
       } catch (err) {
-        console.error('加载预约信息失败:', err)
+        console.error('加载排队信息失败:', err)
       }
     },
-    
-    /** 收到叫号通知 */
-    handleCallNumber(data) {
-      if (String(data.appointmentId) === String(this.appointmentId)) {
-        this.status = 'called'
-        // 振动提醒
-        uni.vibrateShort()
-      }
-    },
-    
-    /** 收到排队变动通知 */
-    handleQueueUpdate(data) {
-      if (String(data.appointmentId) === String(this.appointmentId)) {
-        this.queuePosition = data.queuePosition || this.queuePosition
-      }
-    },
-    
-    /** 进入聊天室 */
-    enterChat() {
+    goChat() {
       uni.redirectTo({
-        url: `/pages/consult/chat?appointmentId=${this.appointmentId}`
+        url: `/pages/consult/chat?appointmentId=${this.appointmentId}&doctorId=${this.doctorId}&doctorName=${this.doctorName}`
       })
     },
-    
-    goAppointments() {
-      uni.redirectTo({ url: '/pages/appointment/list' })
-    },
-    
     goHome() {
       uni.reLaunch({ url: '/pages/index/index' })
     }
@@ -160,172 +152,165 @@ export default {
 <style lang="scss">
 .waiting-container {
   min-height: 100vh;
-  background: #F5F7FA;
-  padding: 30rpx;
-  padding-bottom: 200rpx;
+  background: #F7F8FA;
+  padding-bottom: 140rpx;
 }
 
-.status-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.top-bg {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 400rpx;
+  background: linear-gradient(135deg, #4B6EF2 0%, #2D54EA 100%);
+  border-radius: 0 0 60rpx 60rpx;
+}
+
+.content-wrapper {
+  position: relative;
+  z-index: 1;
   padding: 60rpx 30rpx;
-  background: #fff;
-  border-radius: 20rpx;
-  margin-bottom: 30rpx;
-  
-  &.waiting {
-    .status-icon { font-size: 100rpx; }
-    .status-title { color: #E8A87C; }
-  }
-  
-  &.called {
-    background: linear-gradient(135deg, #4A90D9, #67B8DE);
-    .status-icon { font-size: 100rpx; }
-    .status-title { color: #fff; }
-    .status-desc { color: rgba(255,255,255,0.8); }
-  }
-  
-  .status-title {
-    font-size: 40rpx;
-    font-weight: bold;
-    margin-top: 20rpx;
-  }
-  
-  .status-desc {
-    font-size: 28rpx;
-    color: #999;
-    margin-top: 12rpx;
-  }
 }
 
 .queue-card {
   background: #fff;
-  border-radius: 20rpx;
-  padding: 30rpx;
+  border-radius: 24rpx;
+  padding: 50rpx 40rpx;
+  text-align: center;
+  box-shadow: 0 8rpx 32rpx rgba(0,0,0,0.08);
   margin-bottom: 30rpx;
-  
-  .queue-position {
-    text-align: center;
-    padding: 30rpx 0;
-    border-bottom: 1rpx solid #f0f0f0;
-    margin-bottom: 20rpx;
-    
-    .position-label {
-      display: block;
-      font-size: 26rpx;
-      color: #999;
-    }
-    
-    .position-number {
-      display: block;
-      font-size: 60rpx;
+
+  .queue-header .queue-label {
+    font-size: 28rpx;
+    color: #86909C;
+  }
+
+  .queue-number {
+    margin: 20rpx 0 40rpx;
+    .number {
+      font-size: 120rpx;
       font-weight: bold;
-      color: #4A90D9;
-      margin-top: 10rpx;
+      color: #4B6EF2;
+      line-height: 1;
+    }
+    .unit {
+      font-size: 32rpx;
+      color: #4B6EF2;
+      margin-left: 8rpx;
     }
   }
-  
-  .info-item {
+
+  .queue-meta {
     display: flex;
-    justify-content: space-between;
-    padding: 16rpx 0;
-    
-    .label {
-      font-size: 28rpx;
-      color: #999;
+    align-items: center;
+    justify-content: space-around;
+    padding-top: 30rpx;
+    border-top: 1rpx solid #F2F3F5;
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      .meta-value {
+        font-size: 30rpx;
+        font-weight: 600;
+        color: #1D2129;
+        &.status-active { color: #52C41A; }
+        &.status-done { color: #4B6EF2; }
+      }
+      .meta-label {
+        font-size: 24rpx;
+        color: #C1C5CD;
+        margin-top: 8rpx;
+      }
     }
-    
-    .value {
-      font-size: 28rpx;
-      color: #333;
+    .meta-divider {
+      width: 1rpx;
+      height: 60rpx;
+      background: #F2F3F5;
     }
   }
 }
 
-.called-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.info-card {
   background: #fff;
   border-radius: 20rpx;
-  padding: 60rpx 30rpx;
-  margin-bottom: 30rpx;
-  
-  .called-icon {
-    font-size: 120rpx;
-    animation: shake 0.5s infinite alternate;
+  padding: 30rpx;
+  margin-bottom: 24rpx;
+  .card-title {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #1D2129;
+    margin-bottom: 20rpx;
   }
-  
-  .called-text {
-    font-size: 36rpx;
-    font-weight: bold;
-    color: #4A90D9;
-    margin-top: 20rpx;
-  }
-  
-  .called-hint {
-    font-size: 28rpx;
-    color: #999;
-    margin-top: 12rpx;
-  }
-  
-  .enter-btn {
-    margin-top: 40rpx;
-    width: 400rpx;
-    height: 88rpx;
-    line-height: 88rpx;
-    font-size: 32rpx;
-    color: #fff;
-    background: linear-gradient(135deg, #4A90D9, #67B8DE);
-    border-radius: 44rpx;
-    
-    &::after { border: none; }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 14rpx 0;
+    .info-label { font-size: 26rpx; color: #86909C; }
+    .info-value { font-size: 26rpx; color: #1D2129; }
   }
 }
 
-@keyframes shake {
-  from { transform: rotate(-10deg); }
-  to { transform: rotate(10deg); }
-}
-
-.tips {
+.tips-card {
+  background: rgba(75, 110, 242, 0.06);
+  border-radius: 16rpx;
   padding: 24rpx 30rpx;
-  background: rgba(74, 144, 217, 0.08);
-  border-radius: 12rpx;
-  margin-bottom: 30rpx;
-  
+  margin-bottom: 24rpx;
   .tips-title {
     display: block;
     font-size: 28rpx;
-    font-weight: bold;
-    color: #4A90D9;
+    font-weight: 600;
+    color: #4B6EF2;
     margin-bottom: 12rpx;
   }
-  
   .tips-item {
     display: block;
     font-size: 24rpx;
-    color: #666;
+    color: #4E5969;
     line-height: 1.8;
   }
 }
 
-.bottom-actions {
-  display: flex;
-  gap: 20rpx;
-  margin-top: 20rpx;
-  
-  .btn-outline {
-    flex: 1;
+.consult-ready {
+  background: linear-gradient(135deg, #52C41A, #73D13D);
+  border-radius: 20rpx;
+  padding: 40rpx;
+  text-align: center;
+  .ready-icon { font-size: 60rpx; display: block; }
+  .ready-text {
+    display: block;
+    font-size: 30rpx;
+    color: #fff;
+    font-weight: 600;
+    margin: 16rpx 0 24rpx;
+  }
+  .ready-btn {
+    background: #fff;
+    color: #52C41A;
+    font-size: 30rpx;
+    font-weight: 600;
+    border-radius: 40rpx;
     height: 80rpx;
     line-height: 80rpx;
-    font-size: 28rpx;
-    color: #4A90D9;
+    &::after { border: none; }
+  }
+}
+
+.bottom-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  padding: 20rpx 30rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  box-shadow: 0 -4rpx 16rpx rgba(0,0,0,0.03);
+  .btn-back {
+    height: 88rpx;
+    line-height: 88rpx;
+    font-size: 30rpx;
+    color: #4B6EF2;
     background: #fff;
-    border: 2rpx solid #4A90D9;
-    border-radius: 40rpx;
-    
+    border: 2rpx solid #4B6EF2;
+    border-radius: 44rpx;
     &::after { border: none; }
   }
 }

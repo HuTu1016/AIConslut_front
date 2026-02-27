@@ -53,6 +53,15 @@
       <view style="height: 120rpx;"></view>
     </scroll-view>
     
+    <!-- 医生请求结束问诊确认条 -->
+    <view class="end-confirm-bar" v-if="appointmentStatus === 25">
+      <text class="end-confirm-text">👨‍⚕️ 医生请求结束本次问诊</text>
+      <view class="end-confirm-actions">
+        <button class="btn-reject" @click="rejectEnd">继续问诊</button>
+        <button class="btn-confirm" @click="confirmEnd">同意结束</button>
+      </view>
+    </view>
+
     <!-- 底部输入 -->
     <view class="input-area">
       <input 
@@ -69,7 +78,7 @@
 </template>
 
 <script>
-import { apiSendMessage, apiGetMessages, apiMarkMessagesRead, apiGetAppointmentDetail } from '@/utils/request.js'
+import { apiSendMessage, apiGetMessages, apiMarkMessagesRead, apiGetAppointmentDetail, apiConfirmEndConsult, apiRejectEndConsult } from '@/utils/request.js'
 
 export default {
   data() {
@@ -89,8 +98,9 @@ export default {
       // 问诊调度相关
       hasCheckedIn: false,  // 是否已签到
       consultStartTime: null,  // 问诊开始时间
-      remainingMinutes: 60,  // 剩余时间（分钟）
-      showTimeoutWarning: false  // 是否显示超时预警
+      remainingMinutes: 60,
+      showTimeoutWarning: false,
+      appointmentStatus: 20  // 当前预约状态
     }
   },
   onLoad(options) {
@@ -108,7 +118,6 @@ export default {
     this.stopTimeoutCheck()
   },
   methods: {
-    /** 从预约详情获取医生信息 */
     async loadDoctorInfo() {
       if (!this.appointmentId) return
       try {
@@ -117,6 +126,7 @@ export default {
           this.doctor.id = res.data.doctorId
           this.doctor.name = res.data.doctorName || '医生'
           this.doctor.avatarUrl = res.data.doctorAvatar || ''
+          this.appointmentStatus = res.data.status
         }
       } catch (err) {
         console.error('获取医生信息失败:', err)
@@ -241,6 +251,31 @@ export default {
       uni.navigateTo({
         url: `/pages/consult/record?appointmentId=${this.appointmentId}`
       })
+    },
+
+    /** 患者同意结束问诊 */
+    async confirmEnd() {
+      try {
+        await apiConfirmEndConsult(this.appointmentId)
+        this.appointmentStatus = 30
+        uni.showToast({ title: '问诊已结束', icon: 'success' })
+        setTimeout(() => {
+          uni.redirectTo({ url: '/pages/appointment/list?status=30' })
+        }, 1500)
+      } catch (err) {
+        uni.showToast({ title: '操作失败', icon: 'none' })
+      }
+    },
+
+    /** 患者拒绝结束，继续问诊 */
+    async rejectEnd() {
+      try {
+        await apiRejectEndConsult(this.appointmentId)
+        this.appointmentStatus = 20
+        uni.showToast({ title: '已继续问诊', icon: 'success' })
+      } catch (err) {
+        uni.showToast({ title: '操作失败', icon: 'none' })
+      }
     }
   }
 }
@@ -418,6 +453,45 @@ export default {
     
     &::after {
       border: none;
+    }
+  }
+}
+
+.end-confirm-bar {
+  background: linear-gradient(135deg, #FFF7E6, #FFF1CC);
+  padding: 24rpx 30rpx;
+  border-top: 1rpx solid #FFD666;
+
+  .end-confirm-text {
+    display: block;
+    font-size: 28rpx;
+    color: #D46B08;
+    font-weight: 500;
+    margin-bottom: 16rpx;
+  }
+
+  .end-confirm-actions {
+    display: flex;
+    gap: 20rpx;
+
+    .btn-reject, .btn-confirm {
+      flex: 1;
+      height: 72rpx;
+      line-height: 72rpx;
+      font-size: 28rpx;
+      border-radius: 36rpx;
+      &::after { border: none; }
+    }
+
+    .btn-reject {
+      color: #D46B08;
+      background: #fff;
+      border: 2rpx solid #FFD666;
+    }
+
+    .btn-confirm {
+      color: #fff;
+      background: linear-gradient(135deg, #52C41A, #73D13D);
     }
   }
 }

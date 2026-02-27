@@ -439,6 +439,97 @@ export function apiGetUnreadCount() {
 }
 
 /**
+ * 获取未读消息总数（医生消息 + 系统通知，用于TabBar角标）
+ */
+export function apiGetUnreadTotal() {
+  return request({
+    url: '/api/v1/user/consults/messages/unread-total',
+    method: 'GET'
+  })
+}
+
+/**
+ * 删除会话（用户端软删除）
+ */
+export function apiDeleteConsultSession(appointmentId) {
+  return request({
+    url: `/api/v1/user/consults/sessions/${appointmentId}`,
+    method: 'DELETE'
+  })
+}
+
+/**
+ * 获取通知列表（分页）
+ */
+export function apiGetNotifications(page = 1, size = 20) {
+  return request({
+    url: '/api/v1/user/notifications',
+    method: 'GET',
+    data: { page, size }
+  })
+}
+
+/**
+ * 标记通知已读
+ */
+export function apiMarkNotificationRead(id) {
+  return request({
+    url: `/api/v1/user/notifications/${id}/read`,
+    method: 'POST'
+  })
+}
+
+/**
+ * 全部通知标记已读
+ */
+export function apiMarkAllNotificationsRead() {
+  return request({
+    url: '/api/v1/user/notifications/read-all',
+    method: 'POST'
+  })
+}
+
+/**
+ * 删除通知
+ */
+export function apiDeleteNotification(id) {
+  return request({
+    url: `/api/v1/user/notifications/${id}`,
+    method: 'DELETE'
+  })
+}
+
+/**
+ * 获取排队信息（排队号、前面几位、预估等待）
+ */
+export function apiGetQueueInfo(appointmentId) {
+  return request({
+    url: `/api/v1/user/appointments/${appointmentId}`,
+    method: 'GET'
+  })
+}
+
+/**
+ * 确认结束问诊（患者同意医生的结束请求）
+ */
+export function apiConfirmEndConsult(appointmentId) {
+  return request({
+    url: `/api/v1/user/consults/sessions/${appointmentId}/confirm-end`,
+    method: 'POST'
+  })
+}
+
+/**
+ * 拒绝结束问诊（患者继续问诊）
+ */
+export function apiRejectEndConsult(appointmentId) {
+  return request({
+    url: `/api/v1/user/consults/sessions/${appointmentId}/reject-end`,
+    method: 'POST'
+  })
+}
+
+/**
  * 创建问诊记录
  * @param {Object} data 问诊信息
  */
@@ -473,50 +564,6 @@ export function apiAiChat(data) {
   })
 }
 
-
-
-// ==================== 通知消息相关接口 ====================
-
-/**
- * 获取通知列表
- */
-export function apiGetNotifications(params) {
-  return request({
-    url: '/api/v1/user/notifications',
-    method: 'GET',
-    data: params
-  })
-}
-
-/**
- * 获取未读通知数
- */
-export function apiGetNotificationUnreadCount() {
-  return request({
-    url: '/api/v1/user/notifications/unread/count',
-    method: 'GET'
-  })
-}
-
-/**
- * 标记通知已读
- */
-export function apiMarkNotificationRead(id) {
-  return request({
-    url: `/api/v1/user/notifications/${id}/read`,
-    method: 'POST'
-  })
-}
-
-/**
- * 全部标记已读
- */
-export function apiMarkAllNotificationsRead() {
-  return request({
-    url: '/api/v1/user/notifications/read-all',
-    method: 'POST'
-  })
-}
 
 
 

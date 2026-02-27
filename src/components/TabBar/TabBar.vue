@@ -8,6 +8,8 @@
     >
       <view class="icon-box">
         <image class="tab-icon" src="/static/tabbar/消息-copy.png" mode="aspectFit"></image>
+        <!-- 未读消息角标 -->
+        <view class="badge" v-if="displayBadge > 0">{{ displayBadge > 99 ? '99+' : displayBadge }}</view>
       </view>
       <text class="label">消息</text>
     </view>
@@ -37,6 +39,9 @@
 </template>
 
 <script>
+import { apiGetUnreadTotal } from '@/utils/request.js'
+import { isLoggedIn } from '@/utils/store.js'
+
 export default {
   name: 'TabBar',
   props: {
@@ -44,9 +49,42 @@ export default {
     currentTab: {
       type: String,
       default: 'home'
+    },
+    // 由消息页直接传入的角标数（优先使用）
+    messageBadge: {
+      type: Number,
+      default: -1
+    }
+  },
+  data() {
+    return {
+      unreadCount: 0
+    }
+  },
+  computed: {
+    /** 优先使用父组件传递的角标数，否则使用自身轮询获取的数 */
+    displayBadge() {
+      if (this.messageBadge >= 0) return this.messageBadge
+      return this.unreadCount
+    }
+  },
+  mounted() {
+    // 不在消息页时，自行获取未读数
+    if (this.messageBadge < 0 && isLoggedIn()) {
+      this.fetchUnread()
     }
   },
   methods: {
+    async fetchUnread() {
+      try {
+        const res = await apiGetUnreadTotal()
+        if (res.code === 200 && res.data) {
+          this.unreadCount = res.data.total || 0
+        }
+      } catch (e) {
+        // 静默失败
+      }
+    },
     goMessage() {
       if (this.currentTab === 'message') return
       uni.redirectTo({
@@ -103,11 +141,30 @@ export default {
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
       
       .tab-icon {
         width: 48rpx;
         height: 48rpx;
         opacity: 0.6;
+      }
+
+      /* 未读角标气泡 */
+      .badge {
+        position: absolute;
+        top: -12rpx;
+        right: -20rpx;
+        min-width: 32rpx;
+        height: 32rpx;
+        padding: 0 8rpx;
+        background: #FF4D4F;
+        border-radius: 16rpx;
+        color: #fff;
+        font-size: 20rpx;
+        line-height: 32rpx;
+        text-align: center;
+        box-sizing: border-box;
+        border: 2rpx solid #fff;
       }
     }
     

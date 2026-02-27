@@ -108,9 +108,10 @@
 			}
 		},
 		{
-			"path": "pages/notification/list",
+			"path": "pages/consult/records",
 			"style": {
-				"navigationBarTitleText": "消息通知"
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "问诊记录"
 			}
 		},
 		{

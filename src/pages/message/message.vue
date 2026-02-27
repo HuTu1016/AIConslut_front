@@ -8,81 +8,75 @@
       <!-- 头部标题 -->
       <view class="header-section">
         <text class="page-title">消息</text>
+        <view class="header-actions" v-if="totalUnread > 0" @click="markAllRead">
+          <text class="mark-all-text">全部已读</text>
+        </view>
       </view>
       
-      <!-- 列表区域 -->
+      <!-- 统一消息列表 -->
       <view class="session-list">
-        
-        <!-- 消息通知入口 (置顶) -->
-        <view class="session-item notification-entry" @click="goNotifications">
-          <view class="avatar-box notify-bg">
-            <text class="notify-icon">🔔</text>
-          </view>
-          <view class="content-box">
-            <view class="row-top">
-              <text class="name">消息通知</text>
-              <text class="time" v-if="latestNotification">{{ formatTime(latestNotification.createdAt) }}</text>
-            </view>
-            <view class="row-bottom">
-              <text class="desc">{{ latestNotification ? latestNotification.title : '暂无新通知' }}</text>
-            </view>
-          </view>
-          <view class="unread-badge" v-if="unreadNotifyCount > 0">{{ unreadNotifyCount > 99 ? '99+' : unreadNotifyCount }}</view>
-          <text class="arrow">›</text>
-        </view>
-        
-        <!-- AI 助手 (固定) -->
-        <view class="session-item" @click="goAiChat">
-          <view class="avatar-box">
-             <image class="avatar" src="/static/tabbar/ai.png" mode="aspectFill"></image>
-          </view>
-          <view class="content-box">
-            <view class="row-top">
-              <text class="name">AI健康咨询助手</text>
-              <text class="tag">智能</text>
-            </view>
-            <view class="row-bottom">
-              <text class="desc">24小时在线，随时为您解答健康问题</text>
-            </view>
-          </view>
-          <text class="arrow">›</text>
-        </view>
-        
-        <!-- 医生会话列表 -->
         <view 
           class="session-item" 
-          v-for="(session, index) in sessions" 
-          :key="index"
-          @click="goDoctorChat(session)"
+          v-for="(item, index) in displayList" 
+          :key="item._key"
+          @click="handleItemClick(item)"
+          @longpress="handleLongPress(item, index)"
         >
-          <view class="avatar-box">
-            <image class="avatar" :src="session.doctorAvatar || '/static/default-avatar.png'" mode="aspectFill"></image>
-            <view class="unread-dot" v-if="session.unreadCount > 0">{{ session.unreadCount > 99 ? '99+' : session.unreadCount }}</view>
+          <!-- 头像区域 -->
+          <view class="avatar-box" :class="getAvatarClass(item)">
+            <image v-if="item._type === 'DOCTOR'" class="avatar" :src="item.doctorAvatar || '/static/default-avatar.png'" mode="aspectFill"></image>
+            <image v-else-if="item._type === 'AI'" class="avatar" src="/static/tabbar/ai.png" mode="aspectFill"></image>
+            <text v-else class="notify-emoji">{{ getNotifyIcon(item.notifyType) }}</text>
+            
+            <!-- 未读角标（微信样式） -->
+            <view class="unread-badge" v-if="item._unread > 0">{{ item._unread > 99 ? '99+' : item._unread }}</view>
+            <view class="unread-dot" v-else-if="item._type === 'NOTIFICATION' && item.isRead === 0"></view>
           </view>
           
+          <!-- 内容区域 -->
           <view class="content-box">
             <view class="row-top">
-              <text class="name">{{ session.doctorName }} 医生</text>
-              <text class="time">{{ formatTime(session.lastMessageTime) }}</text>
+              <text class="name">{{ getItemName(item) }}</text>
+              <text class="tag" v-if="item._type === 'AI'">智能</text>
+              <text class="time">{{ formatTime(item._time) }}</text>
             </view>
             <view class="row-bottom">
-              <text class="desc">{{ session.lastMessage }}</text>
+              <text class="desc">{{ item._summary }}</text>
             </view>
           </view>
+
+
         </view>
         
-        <!-- 空状态 (仅当没有医生会话时显示提示，但AI常驻，所以通常不需要完全空状态) -->
-        <view class="empty-tip" v-if="sessions.length === 0">
-          <text>暂无医生问诊记录</text>
+        <!-- 空状态 -->
+        <view class="empty-state" v-if="!loading && displayList.length === 0">
+          <text class="empty-icon">💬</text>
+          <text class="empty-text">暂无消息</text>
         </view>
         
+        <!-- 加载更多 -->
+        <view class="load-more" v-if="loading">
+          <text>加载中...</text>
+        </view>
+        <view class="no-more" v-if="!loading && !hasMore && displayList.length > 0 && notifications.length > 0">
+          <text>没有更多了</text>
+        </view>
       </view>
       
       <view style="height: 120rpx;"></view>
     </view>
     
+    <!-- 长按操作菜单 -->
+    <view class="action-mask" v-if="showActionMenu" @click="closeActionMenu">
+      <view class="action-menu" :style="{ top: actionMenuTop + 'px' }" @click.stop>
+        <view class="action-item delete" @click="confirmDelete">
+          <text>删除该聊天</text>
+        </view>
+      </view>
+    </view>
+    
     <!-- 底部导航栏 -->
-    <TabBar currentTab="message" />
+    <TabBar currentTab="message" :messageBadge="totalUnread" />
     
     <!-- 全局悬浮球 -->
     <FloatingAI />
@@ -92,7 +86,15 @@
 <script>
 import TabBar from '@/components/TabBar/TabBar.vue'
 import FloatingAI from '@/components/FloatingAI/FloatingAI.vue'
-import { apiGetConsultSessions, request } from '@/utils/request.js'
+import { 
+  apiGetConsultSessions, 
+  apiGetNotifications, 
+  apiDeleteConsultSession,
+  apiDeleteNotification,
+  apiMarkNotificationRead,
+  apiMarkAllNotificationsRead,
+  apiGetUnreadTotal
+} from '@/utils/request.js'
 import { isLoggedIn } from '@/utils/store.js'
 
 export default {
@@ -102,39 +104,94 @@ export default {
   },
   data() {
     return {
-      sessions: [],
-      unreadNotifyCount: 0,
-      latestNotification: null
+      sessions: [],           // 医生会话列表
+      notifications: [],      // 系统通知列表
+      notifyPage: 1,
+      notifySize: 20,
+      hasMore: true,
+      loading: false,
+      totalUnread: 0,         // 全局未读总数
+
+      // 长按菜单
+      showActionMenu: false,
+      actionMenuTop: 0,
+      selectedItem: null,
+      selectedIndex: -1
     }
   },
+  
+  computed: {
+    /** 合并所有消息为统一列表，按时间倒序排列 */
+    displayList() {
+      const list = []
+
+      // 1. AI助手（固定条目）
+      list.push({
+        _key: 'ai-assistant',
+        _type: 'AI',
+        _time: null,
+        _summary: '24小时在线，随时为您解答健康问题',
+        _unread: 0
+      })
+
+      // 2. 医生会话
+      this.sessions.forEach(s => {
+        list.push({
+          ...s,
+          _key: `doctor-${s.appointmentId}`,
+          _type: 'DOCTOR',
+          _time: s.lastMessageTime,
+          _summary: s.lastMessage || '暂无消息',
+          _unread: s.unreadCount || 0
+        })
+      })
+
+      // 3. 系统通知
+      this.notifications.forEach(n => {
+        list.push({
+          ...n,
+          _key: `notify-${n.id}`,
+          _type: 'NOTIFICATION',
+          _time: n.createdAt,
+          _summary: n.content || n.title,
+          _unread: 0
+        })
+      })
+
+      // 按时间倒序排列，AI助手固定在最前面
+      list.sort((a, b) => {
+        if (a._type === 'AI') return -1
+        if (b._type === 'AI') return 1
+        const ta = a._time ? new Date(a._time).getTime() : 0
+        const tb = b._time ? new Date(b._time).getTime() : 0
+        return tb - ta
+      })
+
+      return list
+    }
+  },
+
   onShow() {
     if (isLoggedIn()) {
       this.loadSessions()
-      this.loadNotificationSummary()
+      this.loadNotifications(true)
+      this.loadUnreadTotal()
     } else {
-        this.sessions = []
-        this.unreadNotifyCount = 0
-        this.latestNotification = null
+      this.sessions = []
+      this.notifications = []
+      this.totalUnread = 0
     }
   },
+
+  onReachBottom() {
+    if (this.hasMore && !this.loading) {
+      this.notifyPage++
+      this.loadNotifications(false)
+    }
+  },
+
   methods: {
-    // 加载通知摘要
-    async loadNotificationSummary() {
-      try {
-        const res = await request({
-          url: '/api/v1/user/notifications/summary',
-          method: 'GET'
-        })
-        if (res.code === 200 && res.data) {
-          this.unreadNotifyCount = res.data.unreadCount || 0
-          this.latestNotification = res.data.latest || null
-        }
-      } catch (err) {
-        console.error('加载通知摘要失败:', err)
-      }
-    },
-    
-    // 加载会话列表
+    /** 加载医生会话 */
     async loadSessions() {
       try {
         const res = await apiGetConsultSessions()
@@ -145,49 +202,187 @@ export default {
         console.error('加载会话失败:', err)
       }
     },
-    
-    // 跳转消息通知
-    goNotifications() {
-      uni.navigateTo({
-        url: '/pages/notification/list'
-      })
+
+    /** 加载通知列表 */
+    async loadNotifications(reset) {
+      if (this.loading) return
+      if (reset) {
+        this.notifyPage = 1
+        this.hasMore = true
+      }
+      if (!this.hasMore) return
+      this.loading = true
+      try {
+        const res = await apiGetNotifications(this.notifyPage, this.notifySize)
+        if (res.code === 200) {
+          const records = res.data?.records || []
+          if (reset) {
+            this.notifications = records
+          } else {
+            this.notifications = [...this.notifications, ...records]
+          }
+          this.hasMore = records.length >= this.notifySize
+        }
+      } catch (err) {
+        console.error('加载通知失败:', err)
+      } finally {
+        this.loading = false
+      }
     },
-    
-    // 跳转 AI 问诊
-    goAiChat() {
-      uni.navigateTo({
-        url: '/pages/ai/chat'
-      })
+
+    /** 获取统一未读总数 */
+    async loadUnreadTotal() {
+      try {
+        const res = await apiGetUnreadTotal()
+        if (res.code === 200 && res.data) {
+          this.totalUnread = res.data.total || 0
+        }
+      } catch (err) {
+        console.error('获取未读数失败:', err)
+      }
     },
-    
-    // 跳转医生问诊
-    goDoctorChat(session) {
-      uni.navigateTo({
-        url: `/pages/consult/chat?appointmentId=${session.appointmentId}&doctorId=${session.doctorId}&doctorName=${session.doctorName}`
-      })
+
+    /** 点击消息项 */
+    handleItemClick(item) {
+      if (this.showActionMenu) {
+        this.closeActionMenu()
+        return
+      }
+
+      if (item._type === 'AI') {
+        uni.navigateTo({ url: '/pages/ai/chat' })
+      } else if (item._type === 'DOCTOR') {
+        uni.navigateTo({
+          url: `/pages/consult/chat?appointmentId=${item.appointmentId}&doctorId=${item.doctorId}&doctorName=${item.doctorName}`
+        })
+      } else if (item._type === 'NOTIFICATION') {
+        // 标记已读
+        if (item.isRead === 0) {
+          apiMarkNotificationRead(item.id)
+          item.isRead = 1
+          this.totalUnread = Math.max(0, this.totalUnread - 1)
+        }
+        // 有跳转链接则跳转
+        if (item.jumpUrl) {
+          uni.navigateTo({
+            url: item.jumpUrl,
+            fail: () => uni.showToast({ title: '页面不存在', icon: 'none' })
+          })
+        }
+      }
     },
-    
-    // 格式化时间
+
+    /** 长按消息项 */
+    handleLongPress(item, index) {
+      // AI助手不允许删除
+      if (item._type === 'AI') return
+      
+      this.selectedItem = item
+      this.selectedIndex = index
+      // 计算弹出位置
+      this.actionMenuTop = 200 + index * 80
+      this.showActionMenu = true
+    },
+
+    closeActionMenu() {
+      this.showActionMenu = false
+      this.selectedItem = null
+      this.selectedIndex = -1
+    },
+
+    /** 确认删除 */
+    confirmDelete() {
+      const item = this.selectedItem
+      if (!item) return
+
+      uni.showModal({
+        title: '提示',
+        content: '确定删除该聊天吗？',
+        success: async (res) => {
+          if (res.confirm) {
+            try {
+              if (item._type === 'DOCTOR') {
+                await apiDeleteConsultSession(item.appointmentId)
+                this.sessions = this.sessions.filter(s => s.appointmentId !== item.appointmentId)
+              } else if (item._type === 'NOTIFICATION') {
+                await apiDeleteNotification(item.id)
+                this.notifications = this.notifications.filter(n => n.id !== item.id)
+              }
+              uni.showToast({ title: '已删除', icon: 'success' })
+              this.loadUnreadTotal()
+            } catch (err) {
+              uni.showToast({ title: '删除失败', icon: 'error' })
+            }
+          }
+        }
+      })
+      this.closeActionMenu()
+    },
+
+    /** 全部标记已读 */
+    async markAllRead() {
+      try {
+        await apiMarkAllNotificationsRead()
+        this.notifications.forEach(n => n.isRead = 1)
+        this.totalUnread = 0
+        uni.showToast({ title: '已全部标记已读', icon: 'success' })
+      } catch (err) {
+        uni.showToast({ title: '操作失败', icon: 'error' })
+      }
+    },
+
+    getAvatarClass(item) {
+      if (item._type === 'AI') return 'ai-bg'
+      if (item._type === 'NOTIFICATION') return 'notify-bg ' + (this.getNotifyColorClass(item.notifyType))
+      return ''
+    },
+
+    getItemName(item) {
+      if (item._type === 'AI') return 'AI健康咨询助手'
+      if (item._type === 'DOCTOR') {
+        const title = item.doctorTitle ? ` - ${item.doctorTitle}` : ''
+        return `${item.doctorName}${title}`
+      }
+      // 通知类型
+      return item.title || '系统通知'
+    },
+
+    getNotifyIcon(type) {
+      const icons = {
+        'APPOINTMENT_SUCCESS': '📅',
+        'APPOINTMENT_REMIND': '⏰',
+        'CONSULT_REPLY': '💬',
+        'SYSTEM_NOTICE': '📢',
+        'PAYMENT_SUCCESS': '💳'
+      }
+      return icons[type] || '📌'
+    },
+
+    getNotifyColorClass(type) {
+      const classes = {
+        'APPOINTMENT_SUCCESS': 'color-blue',
+        'APPOINTMENT_REMIND': 'color-orange',
+        'CONSULT_REPLY': 'color-green',
+        'SYSTEM_NOTICE': 'color-purple',
+        'PAYMENT_SUCCESS': 'color-pink'
+      }
+      return classes[type] || 'color-gray'
+    },
+
     formatTime(time) {
       if (!time) return ''
       const date = new Date(time)
       const now = new Date()
       const diff = now - date
       
-      // 今天内显示时间
       if (diff < 86400000 && date.getDate() === now.getDate()) {
         return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
       }
-      // 昨天
-      if (diff < 172800000) {
-        return '昨天'
-      }
-      // 一周内
+      if (diff < 172800000) return '昨天'
       if (diff < 604800000) {
         const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
         return weekdays[date.getDay()]
       }
-      // 更早
       return `${date.getMonth() + 1}/${date.getDate()}`
     }
   }
@@ -223,11 +418,21 @@ export default {
 .header-section {
   padding-top: 88rpx;
   margin-bottom: 30rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   
   .page-title {
     font-size: 44rpx;
     font-weight: bold;
     color: #fff;
+  }
+
+  .header-actions {
+    .mark-all-text {
+      font-size: 26rpx;
+      color: rgba(255,255,255,0.8);
+    }
   }
 }
 
@@ -241,9 +446,10 @@ export default {
   .session-item {
     display: flex;
     align-items: center;
-    padding: 30rpx;
+    padding: 28rpx 30rpx;
     border-bottom: 1rpx solid #f5f5f5;
     background: #fff;
+    position: relative;
     transition: background 0.2s;
     
     &:active {
@@ -256,79 +462,77 @@ export default {
     
     .avatar-box {
       position: relative;
-      width: 100rpx;
-      height: 100rpx;
+      width: 96rpx;
+      height: 96rpx;
       margin-right: 24rpx;
       flex-shrink: 0;
+      border-radius: 20rpx;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f0f0;
       
       .avatar {
         width: 100%;
         height: 100%;
-        border-radius: 50%;
-        background: #f0f0f0;
-        border: 2rpx solid #fff;
+        border-radius: 20rpx;
+      }
+      
+      .notify-emoji {
+        font-size: 44rpx;
       }
       
       &.ai-bg {
         background: linear-gradient(135deg, #4B6EF2, #85A5FF);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        
-        .emoji {
-          font-size: 56rpx;
-        }
       }
       
-      .unread-dot {
-        position: absolute;
-        top: -6rpx;
-        right: -6rpx;
-        min-width: 36rpx;
-        height: 36rpx;
-        padding: 0 8rpx;
-        background: #FF4D4F;
-        border-radius: 18rpx;
-        color: #fff;
-        font-size: 22rpx;
-        line-height: 36rpx;
-        text-align: center;
-        border: 2rpx solid #fff;
-        box-sizing: border-box;
+      &.notify-bg {
+        &.color-blue { background: linear-gradient(135deg, #4B9EF2, #85BBFF); }
+        &.color-orange { background: linear-gradient(135deg, #FF9500, #FFB347); }
+        &.color-green { background: linear-gradient(135deg, #34C759, #7BE089); }
+        &.color-purple { background: linear-gradient(135deg, #AF52DE, #C987E5); }
+        &.color-pink { background: linear-gradient(135deg, #FF2D55, #FF6B8A); }
+        &.color-gray { background: linear-gradient(135deg, #8E8E93, #AEAEB2); }
       }
     }
     
     .content-box {
       flex: 1;
       overflow: hidden;
-      margin-right: 20rpx;
+      margin-right: 16rpx;
       
       .row-top {
         display: flex;
-        justify-content: space-between;
         align-items: center;
         margin-bottom: 8rpx;
         
         .name {
           font-size: 32rpx;
-          font-weight: bold;
+          font-weight: 600;
           color: #1D2129;
+          flex-shrink: 0;
+          max-width: 320rpx;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
         
         .tag {
           font-size: 20rpx;
           color: #4B6EF2;
           background: rgba(75, 110, 242, 0.1);
-          padding: 2rpx 8rpx;
-          border-radius: 4rpx;
+          padding: 2rpx 10rpx;
+          border-radius: 6rpx;
           margin-left: 12rpx;
+          flex-shrink: 0;
         }
         
         .time {
           font-size: 24rpx;
-          color: #86909C;
+          color: #C1C5CD;
           margin-left: auto;
+          flex-shrink: 0;
         }
       }
       
@@ -345,48 +549,99 @@ export default {
       }
     }
     
-    .arrow {
-      font-size: 28rpx;
-      color: #C9CDD4;
+    /* 未读角标 */
+    .unread-badge {
+      position: absolute;
+      top: -6rpx;
+      right: -6rpx;
+      min-width: 32rpx;
+      height: 32rpx;
+      padding: 0 8rpx;
+      background: #FF4D4F;
+      border-radius: 16rpx;
+      color: #fff;
+      font-size: 20rpx;
+      line-height: 32rpx;
+      text-align: center;
+      box-sizing: border-box;
+      border: 2rpx solid #fff;
+      z-index: 2;
+    }
+
+    /* 未读小红点（通知类型） */
+    .unread-dot {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 16rpx;
+      height: 16rpx;
+      background: #FF4D4F;
+      border-radius: 50%;
+      border: 2rpx solid #fff;
+      z-index: 2;
     }
   }
 }
 
-.empty-tip {
-  padding: 40rpx;
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 200rpx 0;
+
+  .empty-icon {
+    font-size: 120rpx;
+    margin-bottom: 20rpx;
+  }
+
+  .empty-text {
+    font-size: 28rpx;
+    color: #999;
+  }
+}
+
+.load-more, .no-more {
   text-align: center;
-  color: #999;
-  font-size: 24rpx;
+  padding: 30rpx;
+  font-size: 26rpx;
+  color: #C1C5CD;
 }
 
-/* 通知入口样式 */
-.notification-entry {
-  position: relative;
+/* 长按操作蒙层 */
+.action-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.15);
+  z-index: 200;
   
-  .notify-bg {
-    background: linear-gradient(135deg, #FF9500 0%, #FF6B00 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-    .notify-icon {
-      font-size: 48rpx;
-    }
-  }
-  
-  .unread-badge {
+  .action-menu {
     position: absolute;
-    right: 60rpx;
-    min-width: 36rpx;
-    height: 36rpx;
-    padding: 0 10rpx;
-    background: #FF4D4F;
-    border-radius: 18rpx;
-    color: #fff;
-    font-size: 22rpx;
-    line-height: 36rpx;
-    text-align: center;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    border-radius: 16rpx;
+    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12);
+    padding: 8rpx 0;
+    min-width: 280rpx;
+    
+    .action-item {
+      padding: 24rpx 40rpx;
+      text-align: center;
+      font-size: 30rpx;
+      color: #333;
+
+      &.delete {
+        color: #FF4D4F;
+      }
+      
+      &:active {
+        background: #f5f5f5;
+      }
+    }
   }
 }
 </style>

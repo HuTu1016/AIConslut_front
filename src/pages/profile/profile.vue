@@ -204,11 +204,11 @@ export default {
     },
     
     goMessages() {
-      uni.navigateTo({ url: '/pages/notification/list' })
+      uni.redirectTo({ url: '/pages/message/message' })
     },
     
     goRecords() {
-      uni.showToast({ title: '问诊记录功能开发中', icon: 'none' })
+      uni.navigateTo({ url: '/pages/consult/records' })
     },
     
     goAiHistory() {
