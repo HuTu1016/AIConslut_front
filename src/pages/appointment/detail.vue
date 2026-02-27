@@ -50,7 +50,7 @@
         </view>
         <view class="info-item">
           <text class="label">预约时间</text>
-          <text class="value highlight">{{ appointment.appointmentTime }}</text>
+          <text class="value highlight">{{ formatTime(appointment.appointmentTime) }}</text>
         </view>
         <view class="info-item">
           <text class="label">问诊费用</text>
@@ -250,6 +250,18 @@ export default {
     
     goReview() {
       uni.showToast({ title: '评价功能开发中', icon: 'none' })
+    },
+
+    /** 格式化 ISO 时间字符串（去除 T，显示为 yyyy-MM-dd HH:mm） */
+    formatTime(timeStr) {
+      if (!timeStr) return ''
+      const date = new Date(timeStr)
+      const y = date.getFullYear()
+      const M = String(date.getMonth() + 1).padStart(2, '0')
+      const d = String(date.getDate()).padStart(2, '0')
+      const h = String(date.getHours()).padStart(2, '0')
+      const m = String(date.getMinutes()).padStart(2, '0')
+      return `${y}-${M}-${d} ${h}:${m}`
     }
   }
 }

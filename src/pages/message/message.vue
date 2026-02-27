@@ -27,10 +27,6 @@
             <image v-if="item._type === 'DOCTOR'" class="avatar" :src="item.doctorAvatar || '/static/default-avatar.png'" mode="aspectFill"></image>
             <image v-else-if="item._type === 'AI'" class="avatar" src="/static/tabbar/ai.png" mode="aspectFill"></image>
             <text v-else class="notify-emoji">{{ getNotifyIcon(item.notifyType) }}</text>
-            
-            <!-- 未读角标（微信样式） -->
-            <view class="unread-badge" v-if="item._unread > 0">{{ item._unread > 99 ? '99+' : item._unread }}</view>
-            <view class="unread-dot" v-else-if="item._type === 'NOTIFICATION' && item.isRead === 0"></view>
           </view>
           
           <!-- 内容区域 -->
@@ -45,8 +41,9 @@
             </view>
           </view>
 
-
-        </view>
+          <!-- 未读角标（列表右上角） -->
+          <view class="unread-badge" v-if="item._unread > 0">{{ item._unread > 99 ? '99+' : item._unread }}</view>
+          <view class="unread-dot" v-else-if="item._type === 'NOTIFICATION' && item.isRead === 0"></view>        </view>
         
         <!-- 空状态 -->
         <view class="empty-state" v-if="!loading && displayList.length === 0">
@@ -552,8 +549,8 @@ export default {
     /* 未读角标 */
     .unread-badge {
       position: absolute;
-      top: -6rpx;
-      right: -6rpx;
+      top: 16rpx;
+      right: 16rpx;
       min-width: 32rpx;
       height: 32rpx;
       padding: 0 8rpx;
@@ -571,8 +568,8 @@ export default {
     /* 未读小红点（通知类型） */
     .unread-dot {
       position: absolute;
-      top: 0;
-      right: 0;
+      top: 24rpx;
+      right: 24rpx;
       width: 16rpx;
       height: 16rpx;
       background: #FF4D4F;

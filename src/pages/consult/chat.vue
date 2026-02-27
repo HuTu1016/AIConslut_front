@@ -43,9 +43,7 @@
               <text class="time">{{ formatTime(msg.createdAt) }}</text>
             </view>
             
-            <view class="avatar-wrapper" v-if="msg.senderRole === 'USER'">
-              <image class="avatar" src="/static/default-avatar.png" mode="aspectFill"></image>
-            </view>
+
           </template>
         </view>
       </view>
