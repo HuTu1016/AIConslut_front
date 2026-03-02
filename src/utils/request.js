@@ -498,6 +498,16 @@ export function apiMarkAllNotificationsRead() {
 }
 
 /**
+ * 一键全部已读（问诊消息 + 系统通知）
+ */
+export function apiMarkAllRead() {
+  return request({
+    url: '/api/v1/user/consults/messages/read-all',
+    method: 'POST'
+  })
+}
+
+/**
  * 删除通知
  */
 export function apiDeleteNotification(id) {
@@ -643,11 +653,11 @@ export function apiGetArticleDetail(id) {
 }
 
 /**
- * 点赞文章
+ * 点赞/取消点赞文章（需登录）
  */
 export function apiLikeArticle(id) {
   return request({
-    url: `/api/v1/public/articles/${id}/like`,
+    url: `/api/v1/user/articles/${id}/like`,
     method: 'POST'
   })
 }

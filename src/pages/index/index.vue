@@ -12,9 +12,6 @@
             <text class="icon">🏥</text>
             <text class="text">AI智慧问诊</text>
           </view>
-          <view class="notification">
-            <text class="icon">🔔</text>
-          </view>
         </view>
         
         <view class="search-box" @click="goSearch">
@@ -331,7 +328,7 @@ export default {
   left: 0;
   width: 100%;
   height: 480rpx;
-  background: var(--primary-gradient);
+  background: #0F766E;
   border-radius: 0 0 40rpx 40rpx;
   z-index: 0;
 }
@@ -363,21 +360,11 @@ export default {
       .icon { margin-right: 8rpx; }
       .arrow { font-size: 20rpx; margin-left: 8rpx; opacity: 0.8; }
     }
-    
-    .notification {
-      width: 64rpx;
-      height: 64rpx;
-      background: rgba(255,255,255,0.2);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      
-      .icon { font-size: 32rpx; }
-    }
   }
   
   .search-box {
+    width: 100%;
+    box-sizing: border-box;
     height: 80rpx;
     background: #fff;
     border-radius: 40rpx;
@@ -562,7 +549,7 @@ export default {
         transform: translateY(-50%);
         width: 8rpx;
         height: 32rpx;
-        background: var(--primary-color);
+        background: #0b573d;
         border-radius: 4rpx;
       }
     }

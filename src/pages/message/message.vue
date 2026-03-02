@@ -7,7 +7,12 @@
     <view class="content-wrapper">
       <!-- 头部标题 -->
       <view class="header-section">
-        <text class="page-title">消息</text>
+        <view class="title-area">
+          <text class="page-title">消息</text>
+          <view class="notification">
+            <text class="icon">🔔</text>
+          </view>
+        </view>
         <view class="header-actions" v-if="totalUnread > 0" @click="markAllRead">
           <text class="mark-all-text">全部已读</text>
         </view>
@@ -89,7 +94,7 @@ import {
   apiDeleteConsultSession,
   apiDeleteNotification,
   apiMarkNotificationRead,
-  apiMarkAllNotificationsRead,
+  apiMarkAllRead,
   apiGetUnreadTotal
 } from '@/utils/request.js'
 import { isLoggedIn } from '@/utils/store.js'
@@ -131,8 +136,27 @@ export default {
         _unread: 0
       })
 
-      // 2. 医生会话
+      // 2. 医生会话 (按医生排重聚合)
+      const doctorMap = new Map()
       this.sessions.forEach(s => {
+        const existing = doctorMap.get(s.doctorId)
+        if (!existing) {
+          // 第一次遇到这个医生，存入 map
+          doctorMap.set(s.doctorId, { ...s })
+        } else {
+          // 再次遇到，比较消息时间保留最新的，未读数互相累加
+          const tNew = s.lastMessageTime ? new Date(s.lastMessageTime).getTime() : 0
+          const tOld = existing.lastMessageTime ? new Date(existing.lastMessageTime).getTime() : 0
+          if (tNew > tOld) {
+            const sumUnread = (existing.unreadCount || 0) + (s.unreadCount || 0)
+            doctorMap.set(s.doctorId, { ...s, unreadCount: sumUnread })
+          } else {
+            existing.unreadCount = (existing.unreadCount || 0) + (s.unreadCount || 0)
+          }
+        }
+      })
+      
+      doctorMap.forEach(s => {
         list.push({
           ...s,
           _key: `doctor-${s.appointmentId}`,
@@ -319,8 +343,9 @@ export default {
     /** 全部标记已读 */
     async markAllRead() {
       try {
-        await apiMarkAllNotificationsRead()
+        await apiMarkAllRead()
         this.notifications.forEach(n => n.isRead = 1)
+        this.sessions.forEach(s => s.unreadCount = 0)
         this.totalUnread = 0
         uni.showToast({ title: '已全部标记已读', icon: 'success' })
       } catch (err) {
@@ -400,7 +425,7 @@ export default {
   left: 0;
   width: 100%;
   height: 320rpx;
-  background: var(--primary-gradient);
+  background: #0F766E;
   border-radius: 0 0 40rpx 40rpx;
   z-index: 0;
 }
@@ -419,10 +444,28 @@ export default {
   justify-content: space-between;
   align-items: center;
   
-  .page-title {
-    font-size: 44rpx;
-    font-weight: bold;
-    color: #fff;
+  .title-area {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    
+    .page-title {
+      font-size: 44rpx;
+      font-weight: bold;
+      color: #fff;
+    }
+    
+    .notification {
+      width: 64rpx;
+      height: 64rpx;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      .icon { font-size: 32rpx; }
+    }
   }
 
   .header-actions {

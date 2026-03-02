@@ -26,6 +26,14 @@
         </view>
       </view>
 
+      <!-- 封面图 -->
+      <image
+        v-if="article.coverImage"
+        class="article-cover"
+        :src="fullCoverUrl"
+        mode="widthFix"
+      ></image>
+
       <!-- 文章正文(富文本) -->
       <view class="article-body">
         <rich-text :nodes="article.content || ''"></rich-text>
@@ -53,7 +61,7 @@
 </template>
 
 <script>
-import { apiGetArticleDetail, apiLikeArticle } from '@/utils/request.js'
+import { apiGetArticleDetail, apiLikeArticle, BASE_URL } from '@/utils/request.js'
 
 export default {
   data() {
@@ -63,6 +71,14 @@ export default {
       loading: true,
       liked: false,
       likeCount: 0
+    }
+  },
+  computed: {
+    /** 封面图完整URL */
+    fullCoverUrl() {
+      const url = this.article?.coverImage
+      if (!url) return ''
+      return url.startsWith('http') ? url : BASE_URL + url
     }
   },
   onLoad(options) {
@@ -85,10 +101,12 @@ export default {
       try {
         const res = await apiGetArticleDetail(this.articleId)
         if (res.data) {
-          this.article = res.data
-          this.likeCount = res.data.likeCount || 0
+          // 新接口返回格式: {article: {...}, liked: boolean}
+          this.article = res.data.article
+          this.liked = res.data.liked || false
+          this.likeCount = res.data.article?.likeCount || 0
           // 设置导航栏标题
-          uni.setNavigationBarTitle({ title: res.data.title || '资讯详情' })
+          uni.setNavigationBarTitle({ title: res.data.article?.title || '资讯详情' })
         }
       } catch (err) {
         console.error('加载文章详情失败:', err)
@@ -97,17 +115,18 @@ export default {
       }
     },
 
-    /** 点赞 */
+    /** 点赞/取消点赞 */
     async handleLike() {
-      if (this.liked) {
-        uni.showToast({ title: '已点赞', icon: 'none' })
-        return
-      }
       try {
-        await apiLikeArticle(this.articleId)
-        this.liked = true
-        this.likeCount++
-        uni.showToast({ title: '点赞成功', icon: 'success' })
+        const res = await apiLikeArticle(this.articleId)
+        if (res.data) {
+          this.liked = res.data.liked
+          this.likeCount = res.data.likeCount
+          uni.showToast({ 
+            title: res.data.liked ? '点赞成功' : '已取消点赞', 
+            icon: res.data.liked ? 'success' : 'none' 
+          })
+        }
       } catch (err) {
         console.error('点赞失败:', err)
       }
@@ -216,6 +235,14 @@ export default {
     font-size: 22rpx;
     color: var(--primary-color);
   }
+}
+
+/* 封面图 */
+.article-cover {
+  width: 100%;
+  border-radius: 12rpx;
+  margin: 24rpx 32rpx 0;
+  width: calc(100% - 64rpx);
 }
 
 /* 文章正文 */
