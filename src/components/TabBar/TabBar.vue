@@ -7,7 +7,7 @@
       @click="goMessage"
     >
       <view class="icon-box">
-        <image class="tab-icon" src="/static/tabbar/消息-copy.png" mode="aspectFit"></image>
+        <image class="tab-icon" src="/static/tabbar/message.png" mode="aspectFit"></image>
         <!-- 未读消息角标 -->
         <view class="badge" v-if="displayBadge > 0">{{ displayBadge > 99 ? '99+' : displayBadge }}</view>
       </view>
@@ -20,7 +20,7 @@
       @click="goHome"
     >
       <view class="icon-circle">
-        <image class="center-icon" src="/static/tabbar/首页.png" mode="aspectFit"></image>
+        <image class="center-icon" src="/static/tabbar/home-white.png" mode="aspectFit"></image>
       </view>
 
     </view>
@@ -31,7 +31,7 @@
       @click="goProfile"
     >
       <view class="icon-box">
-        <image class="tab-icon" src="/static/tabbar/_我的.png" mode="aspectFit"></image>
+        <image class="tab-icon" src="/static/tabbar/profile.png" mode="aspectFit"></image>
       </view>
       <text class="label">我的</text>
     </view>
@@ -190,7 +190,7 @@ export default {
       .icon-circle {
         width: 100rpx;
         height: 100rpx;
-        background: var(--primary-gradient);
+        background: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -201,7 +201,6 @@ export default {
         .center-icon {
           width: 50rpx;
           height: 50rpx;
-          filter: brightness(0) invert(1);
         }
       }
       

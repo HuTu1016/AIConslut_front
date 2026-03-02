@@ -51,7 +51,7 @@
           <image
             v-if="item.coverImage"
             class="card-cover"
-            :src="item.coverImage"
+            :src="getCoverUrl(item.coverImage)"
             mode="aspectFill"
           ></image>
         </view>
@@ -73,7 +73,7 @@
 </template>
 
 <script>
-import { apiGetArticles } from '@/utils/request.js'
+import { apiGetArticles, BASE_URL } from '@/utils/request.js'
 
 export default {
   data() {
@@ -146,6 +146,12 @@ export default {
       const month = date.getMonth() + 1
       const day = date.getDate()
       return `${month}月${day}日`
+    },
+
+    /** 获取封面图完整URL */
+    getCoverUrl(url) {
+      if (!url) return ''
+      return url.startsWith('http') ? url : BASE_URL + url
     }
   }
 }
