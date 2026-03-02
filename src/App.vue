@@ -14,7 +14,7 @@ export default {
 
 <style>
 /*每个页面公共css */
-:root {
+page, :root {
   --primary-color: #0F766E;
   --primary-gradient: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
   --success-color: #10B981;

@@ -100,8 +100,9 @@
                   @click="previewImage(img, msg.images)"
                 ></image>
               </view>
-              <!-- 文字内容 -->
-              <text class="content" v-if="msg.content">{{ msg.content }}</text>
+              <!-- 文字内容：用户消息纯文本，AI消息Markdown格式化 -->
+              <text class="content" v-if="msg.content && msg.role === 'user'">{{ msg.content }}</text>
+              <rich-text class="content ai-content" v-if="msg.content && msg.role !== 'user'" :nodes="renderMarkdown(msg.content)"></rich-text>
               <view class="cursor" v-if="msg.role === 'ai' && msg.isTyping"></view>
             </view>
           </template>
@@ -828,14 +829,25 @@ export default {
         return;
       }
       
-      const lines = text.split('\n');
-      for (let line of lines) {
-        if (line && line.startsWith('data:')) {
-          const content = line.slice(5);
+      // 按SSE事件边界分割（空行分隔不同事件）
+      // SSE规范：同一事件内多个data:行用\n连接还原换行
+      const events = text.split(/\n\n/);
+      for (let event of events) {
+        if (!event.trim()) continue;
+        const dataLines = [];
+        const eventLines = event.split('\n');
+        for (let line of eventLines) {
+          line = line.replace(/\r$/, '');
+          if (line.startsWith('data:')) {
+            dataLines.push(line.slice(5));
+          }
+        }
+        if (dataLines.length > 0) {
+          const content = dataLines.join('\n');
           this.messages[index].content += content;
-          this.scrollToBottom();
         }
       }
+      this.scrollToBottom();
     },
 
     /**
@@ -958,6 +970,87 @@ export default {
         current: current,
         urls: urls || [current]
       });
+    },
+    
+    /**
+     * 将Markdown文本转换为HTML（轻量级，适配rich-text组件）
+     * 支持：换行、标题、加粗、斜体、无序/有序列表、行内代码
+     */
+    renderMarkdown(text) {
+      if (!text) return '';
+      
+      // 按行处理
+      const lines = text.split('\n');
+      let html = '';
+      let inList = false; // 是否在列表中
+      let listType = ''; // ul 或 ol
+      
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        
+        // 标题：### / ## / #
+        const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
+        if (headingMatch) {
+          if (inList) { html += `</${listType}>`; inList = false; }
+          const level = headingMatch[1].length;
+          const sizes = { 1: '36rpx', 2: '32rpx', 3: '30rpx' };
+          html += `<p style="font-size:${sizes[level]};font-weight:bold;margin:16rpx 0 8rpx;color:#1D2129;">${this.renderInline(headingMatch[2])}</p>`;
+          continue;
+        }
+        
+        // 无序列表：- 或 * 开头
+        const ulMatch = line.match(/^\s*[-*]\s+(.+)$/);
+        if (ulMatch) {
+          if (!inList || listType !== 'ul') {
+            if (inList) html += `</${listType}>`;
+            inList = true;
+            listType = 'ul';
+          }
+          html += `<p style="margin:4rpx 0;padding-left:24rpx;">• ${this.renderInline(ulMatch[1])}</p>`;
+          continue;
+        }
+        
+        // 有序列表：1. 2. 等
+        const olMatch = line.match(/^\s*(\d+)\.\s+(.+)$/);
+        if (olMatch) {
+          if (!inList || listType !== 'ol') {
+            if (inList) html += `</${listType}>`;
+            inList = true;
+            listType = 'ol';
+          }
+          html += `<p style="margin:4rpx 0;padding-left:24rpx;">${olMatch[1]}. ${this.renderInline(olMatch[2])}</p>`;
+          continue;
+        }
+        
+        // 非列表行，关闭列表
+        if (inList) { html += `</${listType}>`; inList = false; }
+        
+        // 空行 → 段落间距
+        if (line.trim() === '') {
+          html += '<p style="margin:12rpx 0;"></p>';
+          continue;
+        }
+        
+        // 普通段落
+        html += `<p style="margin:4rpx 0;">${this.renderInline(line)}</p>`;
+      }
+      
+      if (inList) html += `</${listType}>`;
+      return html;
+    },
+    
+    /**
+     * 处理行内Markdown语法（加粗、斜体、行内代码）
+     */
+    renderInline(text) {
+      if (!text) return '';
+      return text
+        // 行内代码
+        .replace(/`([^`]+)`/g, '<span style="background-color:#F2F3F5;padding:2rpx 8rpx;border-radius:4rpx;font-size:26rpx;">$1</span>')
+        // 加粗
+        .replace(/\*\*(.+?)\*\*/g, '<span style="font-weight:bold;">$1</span>')
+        // 斜体
+        .replace(/\*(.+?)\*/g, '<span style="font-style:italic;">$1</span>');
     }
   }
 };
@@ -1026,7 +1119,7 @@ export default {
     justify-content: center;
     margin: 20rpx 30rpx;
     height: 80rpx;
-    background: var(--primary-gradient);
+    background: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
     color: #fff;
     border-radius: 40rpx;
     font-size: 28rpx;
@@ -1177,7 +1270,7 @@ export default {
     flex-direction: row-reverse;
     
     .bubble {
-      background: var(--primary-gradient);
+      background: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
       color: #fff;
       border-radius: 20rpx 4rpx 20rpx 20rpx;
       margin-right: 20rpx;
@@ -1235,6 +1328,13 @@ export default {
   line-height: 1.6;
   position: relative;
   word-wrap: break-word;
+}
+
+/* AI消息Markdown格式化样式 */
+.ai-content {
+  font-size: 28rpx;
+  line-height: 1.7;
+  color: #1D2129;
 }
 
 .cursor {
@@ -1345,7 +1445,7 @@ export default {
     height: 80rpx;
     line-height: 80rpx;
     text-align: center;
-    background: var(--primary-gradient);
+    background: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
     color: #fff;
     font-size: 28rpx;
     font-weight: 500;
@@ -1529,7 +1629,7 @@ export default {
 .send-btn {
   width: 80rpx;
   height: 80rpx;
-  background: var(--primary-gradient);
+  background: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
