@@ -400,7 +400,7 @@ export default {
   left: 0;
   width: 100%;
   height: 320rpx;
-  background: linear-gradient(135deg, #4B6EF2 0%, #2D54EA 100%);
+  background: var(--primary-gradient);
   border-radius: 0 0 40rpx 40rpx;
   z-index: 0;
 }
@@ -481,14 +481,14 @@ export default {
       }
       
       &.ai-bg {
-        background: linear-gradient(135deg, #4B6EF2, #85A5FF);
+        background: linear-gradient(135deg, #0F766E, #2DD4BF);
       }
       
       &.notify-bg {
-        &.color-blue { background: linear-gradient(135deg, #4B9EF2, #85BBFF); }
-        &.color-orange { background: linear-gradient(135deg, #FF9500, #FFB347); }
-        &.color-green { background: linear-gradient(135deg, #34C759, #7BE089); }
-        &.color-purple { background: linear-gradient(135deg, #AF52DE, #C987E5); }
+        &.color-blue { background: linear-gradient(135deg, #14B8A6, #5EEAD4); }
+        &.color-orange { background: linear-gradient(135deg, #F59E0B, #FCD34D); }
+        &.color-green { background: linear-gradient(135deg, #10B981, #6EE7B7); }
+        &.color-purple { background: linear-gradient(135deg, #64748B, #94A3B8); }
         &.color-pink { background: linear-gradient(135deg, #FF2D55, #FF6B8A); }
         &.color-gray { background: linear-gradient(135deg, #8E8E93, #AEAEB2); }
       }
@@ -517,8 +517,8 @@ export default {
         
         .tag {
           font-size: 20rpx;
-          color: #4B6EF2;
-          background: rgba(75, 110, 242, 0.1);
+          color: var(--primary-color);
+          background: rgba(15, 118, 110, 0.1);
           padding: 2rpx 10rpx;
           border-radius: 6rpx;
           margin-left: 12rpx;

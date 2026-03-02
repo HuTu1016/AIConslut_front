@@ -29,7 +29,7 @@
       </view>
 
       <!-- Banner 轮播 -->
-      <swiper class="banner-swiper" indicator-dots autoplay circular indicator-active-color="#4B6EF2">
+      <swiper class="banner-swiper" indicator-dots autoplay circular indicator-active-color="#0F766E">
         <swiper-item>
           <view class="banner-item blue-theme">
             <view class="banner-text">
@@ -331,7 +331,7 @@ export default {
   left: 0;
   width: 100%;
   height: 480rpx;
-  background: linear-gradient(135deg, #4B6EF2 0%, #2D54EA 100%);
+  background: var(--primary-gradient);
   border-radius: 0 0 40rpx 40rpx;
   z-index: 0;
 }
@@ -407,7 +407,7 @@ export default {
     .search-btn {
       width: 120rpx;
       height: 64rpx;
-      background: #4B6EF2;
+      background: var(--primary-color);
       border-radius: 32rpx;
       color: #fff;
       font-size: 28rpx;
@@ -447,9 +447,9 @@ export default {
         .emoji-icon { font-size: 48rpx; }
         .icon-img { width: 60rpx; }
         
-        &.ai-gradient { background: linear-gradient(135deg, #E8F4FF 0%, #D1E9FF 100%); color: #4B6EF2; }
+        &.ai-gradient { background: linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%); color: var(--primary-color); }
         &.book-gradient { background: linear-gradient(135deg, #E6FFFA 0%, #B5F5EC 100%); color: #00D09C; }
-        &.record-gradient { background: linear-gradient(135deg, #FFF7E6 0%, #FFE8B8 100%); color: #FFB02E; }
+        &.record-gradient { background: linear-gradient(135deg, #FEFCE8 0%, #FEF08A 100%); color: var(--warning-color); }
       }
       
       .title {
@@ -482,7 +482,7 @@ export default {
     position: relative;
     overflow: hidden;
     
-    &.blue-theme { background: linear-gradient(120deg, #4B6EF2 0%, #7B96FF 100%); }
+    &.blue-theme { background: linear-gradient(120deg, #0F766E 0%, #14B8A6 100%); }
     &.green-theme { background: linear-gradient(120deg, #00D09C 0%, #26E6B8 100%); }
     
     .banner-text {
@@ -508,7 +508,7 @@ export default {
         display: inline-block;
         padding: 8rpx 24rpx;
         background: #fff;
-        color: #4B6EF2; /* Dynamic color based on parent not easy in css var without scope, keep simple */
+        color: #0F766E; /* Dynamic color based on parent not easy in css var without scope, keep simple */
         border-radius: 24rpx;
         font-size: 24rpx;
         font-weight: bold;
@@ -562,7 +562,7 @@ export default {
         transform: translateY(-50%);
         width: 8rpx;
         height: 32rpx;
-        background: #4B6EF2;
+        background: var(--primary-color);
         border-radius: 4rpx;
       }
     }
@@ -648,8 +648,8 @@ export default {
         padding: 4rpx 12rpx;
         border-radius: 20rpx;
         
-        .star { font-size: 20rpx; color: #FFB02E; margin-right: 4rpx; }
-        .score { font-size: 22rpx; color: #FFB02E; font-weight: bold; }
+        .star { font-size: 20rpx; color: var(--warning-color); margin-right: 4rpx; }
+        .score { font-size: 22rpx; color: var(--warning-color); font-weight: bold; }
       }
     }
     
@@ -714,7 +714,7 @@ export default {
           width: 140rpx;
           height: 56rpx;
           line-height: 56rpx;
-          background: #4B6EF2;
+          background: var(--primary-color);
           color: #fff;
           font-size: 24rpx;
           border-radius: 28rpx;
@@ -823,8 +823,8 @@ export default {
     
     .title-tag {
       font-size: 20rpx;
-      color: #4B6EF2;
-      background: rgba(75, 110, 242, 0.1);
+      color: var(--primary-color);
+      background: rgba(15, 118, 110, 0.1);
       padding: 4rpx 10rpx;
       border-radius: 6rpx;
       margin-bottom: 8rpx;
@@ -836,7 +836,7 @@ export default {
       margin-bottom: 10rpx;
       
       .star {
-        color: #FFB02E;
+        color: var(--warning-color);
         font-size: 24rpx;
         margin-right: 4rpx;
       }

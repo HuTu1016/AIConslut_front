@@ -130,7 +130,7 @@ export default {
   top: 0; left: 0;
   width: 100%;
   height: 280rpx;
-  background: linear-gradient(135deg, #4B6EF2 0%, #2D54EA 100%);
+  background: var(--primary-gradient);
   border-radius: 0 0 40rpx 40rpx;
   z-index: 0;
 }
@@ -219,16 +219,16 @@ export default {
           color: #52C41A;
         }
         &.status-done {
-          background: rgba(75, 110, 242, 0.1);
-          color: #4B6EF2;
+          background: rgba(15, 118, 110, 0.1);
+          color: var(--primary-color);
         }
         &.status-cancel {
           background: rgba(134, 144, 156, 0.1);
           color: #86909C;
         }
         &.status-wait {
-          background: rgba(255, 149, 0, 0.1);
-          color: #FF9500;
+          background: rgba(234, 179, 8, 0.1);
+          color: var(--warning-color);
         }
       }
     }
@@ -262,7 +262,7 @@ export default {
 
       .action-text {
         font-size: 24rpx;
-        color: #4B6EF2;
+        color: var(--primary-color);
       }
     }
   }

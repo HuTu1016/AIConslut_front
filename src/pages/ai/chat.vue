@@ -1026,7 +1026,7 @@ export default {
     justify-content: center;
     margin: 20rpx 30rpx;
     height: 80rpx;
-    background: linear-gradient(135deg, #4B6EF2 0%, #2D54EA 100%);
+    background: var(--primary-gradient);
     color: #fff;
     border-radius: 40rpx;
     font-size: 28rpx;
@@ -1058,7 +1058,7 @@ export default {
       transition: background-color 0.2s;
       
       &:active, &.active {
-        background-color: rgba(75, 110, 242, 0.1);
+        background-color: rgba(15, 118, 110, 0.1);
       }
       
       .session-info {
@@ -1177,11 +1177,11 @@ export default {
     flex-direction: row-reverse;
     
     .bubble {
-      background: linear-gradient(135deg, #4B6EF2 0%, #2D54EA 100%);
+      background: var(--primary-gradient);
       color: #fff;
       border-radius: 20rpx 4rpx 20rpx 20rpx;
       margin-right: 20rpx;
-      box-shadow: 0 4rpx 12rpx rgba(75, 110, 242, 0.2);
+      box-shadow: 0 4rpx 12rpx rgba(15, 118, 110, 0.2);
     }
   }
   
@@ -1203,13 +1203,13 @@ export default {
 }
 
 .system-bubble {
-  background-color: rgba(75, 110, 242, 0.1);
+  background-color: rgba(15, 118, 110, 0.1);
   padding: 16rpx 32rpx;
   border-radius: 30rpx;
   
   .system-content {
     font-size: 24rpx;
-    color: #4B6EF2;
+    color: var(--primary-color);
   }
 }
 
@@ -1293,10 +1293,10 @@ export default {
     position: relative;
     
     &.active {
-      background-color: rgba(75, 110, 242, 0.1);
+      background-color: rgba(15, 118, 110, 0.1);
       
       .tool-text {
-        color: #4B6EF2;
+        color: var(--primary-color);
       }
     }
     
@@ -1316,7 +1316,7 @@ export default {
       right: 8rpx;
       width: 12rpx;
       height: 12rpx;
-      background-color: #4B6EF2;
+      background-color: var(--primary-color);
       border-radius: 50%;
     }
   }
@@ -1345,13 +1345,13 @@ export default {
     height: 80rpx;
     line-height: 80rpx;
     text-align: center;
-    background: linear-gradient(135deg, #4B6EF2 0%, #2D54EA 100%);
+    background: var(--primary-gradient);
     color: #fff;
     font-size: 28rpx;
     font-weight: 500;
     border-radius: 40rpx;
     padding: 0;
-    box-shadow: 0 4rpx 12rpx rgba(75, 110, 242, 0.3);
+    box-shadow: 0 4rpx 12rpx rgba(15, 118, 110, 0.3);
     
     &.disabled {
       background: #C9CDD4;
@@ -1467,7 +1467,7 @@ export default {
     gap: 12rpx;
     
     &.active .func-icon-wrap {
-      background-color: rgba(75, 110, 242, 0.1);
+      background-color: rgba(15, 118, 110, 0.1);
     }
     
     .func-icon-wrap {
@@ -1529,13 +1529,13 @@ export default {
 .send-btn {
   width: 80rpx;
   height: 80rpx;
-  background: linear-gradient(135deg, #4B6EF2 0%, #2D54EA 100%);
+  background: var(--primary-gradient);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4rpx 12rpx rgba(75, 110, 242, 0.3);
+  box-shadow: 0 4rpx 12rpx rgba(15, 118, 110, 0.3);
   
   &.disabled {
     background: #C9CDD4;

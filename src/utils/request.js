@@ -17,7 +17,7 @@ if (DEV_MODE && !uni.getStorageSync('token')) {
 // ==================== 开发测试配置 END ====================
 
 // API基础地址配置
-export const BASE_URL = 'http://192.168.1.73:8080'
+export const BASE_URL = 'http://192.168.0.213:8080'
 
 // 请求超时时间
 const TIMEOUT = 30000
@@ -115,11 +115,7 @@ function handleUnauthorized() {
   })
 }
 
-// API基础地址（用于文件上传）
-const UPLOAD_BASE_URL = 'http://192.168.1.73:8080'
-
 /**
- * 
  * 封装uni.uploadFile为Promise
  * @param {string} filePath 文件临时路径
  * @param {string} url 上传接口地址
@@ -131,7 +127,7 @@ export function uploadFile(filePath, url, name = 'file') {
     const token = uni.getStorageSync('token')
 
     uni.uploadFile({
-      url: UPLOAD_BASE_URL + url,
+      url: BASE_URL + url,
       filePath: filePath,
       name: name,
       header: {

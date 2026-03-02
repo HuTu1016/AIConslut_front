@@ -183,7 +183,7 @@ export default {
 
     &.active {
       color: #fff;
-      background: #4B6EF2;
+      background: var(--primary-color);
       font-weight: bold;
     }
   }
@@ -246,7 +246,7 @@ export default {
     flex-wrap: wrap;
 
     .meta-author {
-      color: #4B6EF2;
+      color: var(--primary-color);
     }
 
     .meta-dot {

@@ -415,7 +415,7 @@ export default {
     left: 0;
     right: 0;
     height: 260rpx;
-    background: linear-gradient(135deg, #4A90D9 0%, #67B8DE 100%);
+    background: var(--primary-gradient);
     border-radius: 0 0 50rpx 50rpx;
   }
   
@@ -526,7 +526,7 @@ export default {
     .num {
       font-size: 40rpx;
       font-weight: bold;
-      color: #4A90D9;
+      color: var(--primary-color);
     }
     
     .label {
@@ -720,7 +720,7 @@ export default {
   }
   
   .btn-confirm {
-    background: linear-gradient(135deg, #4A90D9, #67B8DE);
+    background: var(--primary-gradient);
     color: #fff;
   }
 }

@@ -181,7 +181,7 @@ export default {
       width: 64rpx;
       height: 64rpx;
       border-radius: 50%;
-      background: linear-gradient(135deg, #4B6EF2, #7B96FF);
+      background: var(--primary-gradient);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -211,10 +211,10 @@ export default {
 
   .category-tag {
     padding: 6rpx 20rpx;
-    background: #EDF2FF;
+    background: rgba(15, 118, 110, 0.1);
     border-radius: 20rpx;
     font-size: 22rpx;
-    color: #4B6EF2;
+    color: var(--primary-color);
   }
 }
 
@@ -249,7 +249,7 @@ export default {
       color: #86909C;
 
       &.liked {
-        color: #4B6EF2;
+        color: var(--primary-color);
         font-weight: bold;
       }
     }

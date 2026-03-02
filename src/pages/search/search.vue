@@ -249,7 +249,7 @@ export default {
   .cancel-btn {
     margin-left: 20rpx;
     font-size: 28rpx;
-    color: #4B6EF2;
+    color: var(--primary-color);
     flex-shrink: 0;
   }
 }
@@ -280,8 +280,8 @@ export default {
       box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.04);
 
       &:active {
-        background: #EDF1FF;
-        color: #4B6EF2;
+        background: rgba(15, 118, 110, 0.1);
+        color: var(--primary-color);
       }
     }
   }
@@ -339,8 +339,8 @@ export default {
       .title {
         margin-left: 12rpx;
         font-size: 24rpx;
-        color: #4B6EF2;
-        background: rgba(75, 110, 242, 0.1);
+        color: var(--primary-color);
+        background: rgba(15, 118, 110, 0.1);
         padding: 4rpx 12rpx;
         border-radius: 8rpx;
       }
@@ -357,7 +357,7 @@ export default {
         .score {
           margin-left: 4rpx;
           font-size: 26rpx;
-          color: #E8A87C;
+          color: var(--warning-color);
           font-weight: bold;
         }
       }
@@ -401,7 +401,7 @@ export default {
         padding: 0 32rpx;
         font-size: 26rpx;
         color: #fff;
-        background: linear-gradient(135deg, #4B6EF2, #7B96FF);
+        background: var(--primary-gradient);
         border-radius: 28rpx;
         margin: 0;
 

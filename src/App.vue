@@ -15,11 +15,11 @@ export default {
 <style>
 /*每个页面公共css */
 :root {
-  --primary-color: #4B6EF2;
-  --primary-gradient: linear-gradient(135deg, #4B6EF2 0%, #2D54EA 100%);
-  --success-color: #00D09C;
-  --success-gradient: linear-gradient(135deg, #00D09C 0%, #00B386 100%);
-  --warning-color: #FFB02E;
+  --primary-color: #0F766E;
+  --primary-gradient: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
+  --success-color: #10B981;
+  --success-gradient: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  --warning-color: #EAB308;
   --text-main: #1D2129;
   --text-regular: #4E5969;
   --text-secondary: #86909C;

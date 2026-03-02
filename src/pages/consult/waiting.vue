@@ -161,7 +161,7 @@ export default {
   top: 0; left: 0;
   width: 100%;
   height: 400rpx;
-  background: linear-gradient(135deg, #4B6EF2 0%, #2D54EA 100%);
+  background: var(--primary-gradient);
   border-radius: 0 0 60rpx 60rpx;
 }
 
@@ -189,12 +189,12 @@ export default {
     .number {
       font-size: 120rpx;
       font-weight: bold;
-      color: #4B6EF2;
+      color: var(--primary-color);
       line-height: 1;
     }
     .unit {
       font-size: 32rpx;
-      color: #4B6EF2;
+      color: var(--primary-color);
       margin-left: 8rpx;
     }
   }
@@ -215,7 +215,7 @@ export default {
         font-weight: 600;
         color: #1D2129;
         &.status-active { color: #52C41A; }
-        &.status-done { color: #4B6EF2; }
+        &.status-done { color: var(--primary-color); }
       }
       .meta-label {
         font-size: 24rpx;
@@ -252,7 +252,7 @@ export default {
 }
 
 .tips-card {
-  background: rgba(75, 110, 242, 0.06);
+  background: rgba(15, 118, 110, 0.06);
   border-radius: 16rpx;
   padding: 24rpx 30rpx;
   margin-bottom: 24rpx;
@@ -260,7 +260,7 @@ export default {
     display: block;
     font-size: 28rpx;
     font-weight: 600;
-    color: #4B6EF2;
+    color: var(--primary-color);
     margin-bottom: 12rpx;
   }
   .tips-item {
@@ -307,9 +307,9 @@ export default {
     height: 88rpx;
     line-height: 88rpx;
     font-size: 30rpx;
-    color: #4B6EF2;
+    color: var(--primary-color);
     background: #fff;
-    border: 2rpx solid #4B6EF2;
+    border: 2rpx solid var(--primary-color);
     border-radius: 44rpx;
     &::after { border: none; }
   }

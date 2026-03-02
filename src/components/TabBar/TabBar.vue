@@ -178,7 +178,7 @@ export default {
         opacity: 1;
       }
       .label {
-        color: #4B6EF2;
+        color: var(--primary-color);
         font-weight: 600;
       }
     }
@@ -190,12 +190,12 @@ export default {
       .icon-circle {
         width: 100rpx;
         height: 100rpx;
-        background: linear-gradient(135deg, #4B6EF2 0%, #2D54EA 100%);
+        background: var(--primary-gradient);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 8rpx 24rpx rgba(75, 110, 242, 0.4);
+        box-shadow: 0 8rpx 24rpx rgba(15, 118, 110, 0.4);
         margin-bottom: 8rpx;
         
         .center-icon {
@@ -211,7 +211,7 @@ export default {
       }
       
       &.active .label {
-        color: #4B6EF2;
+        color: var(--primary-color);
       }
     }
   }
