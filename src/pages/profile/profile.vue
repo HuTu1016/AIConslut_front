@@ -18,7 +18,7 @@
               完善度{{ completionRate }}% <text class="arrow">›</text>
             </view>
             <view class="completion-tag complete" v-else @click.stop="goEditProfile">
-              信息已完善 100% <text class="arrow">›</text>
+              个人档案已完善 100% <text class="arrow">›</text>
             </view>
           </view>
           <text class="sub-info" v-if="userInfo.age">{{ userInfo.age }}岁</text>
@@ -262,7 +262,7 @@ export default {
     
     goAiHistory() {
       uni.navigateTo({
-        url: '/pages/ai/chat'
+        url: '/pages/ai/history'
       })
     },
     

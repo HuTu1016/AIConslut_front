@@ -108,6 +108,12 @@
 			}
 		},
 		{
+			"path": "pages/ai/history",
+			"style": {
+				"navigationBarTitleText": "AI问诊历史"
+			}
+		},
+		{
 			"path": "pages/consult/records",
 			"style": {
 				"navigationStyle": "custom",

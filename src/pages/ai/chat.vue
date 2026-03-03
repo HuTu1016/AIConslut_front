@@ -47,9 +47,6 @@
           <view v-if="deleteMode" class="delete-btn" @click.stop="deleteSession(session.id)">
             <text class="delete-icon">🗑️</text>
           </view>
-          <view class="session-badge" v-else-if="session.messageCount > 0">
-            {{ session.messageCount }}轮
-          </view>
         </view>
       </scroll-view>
     </view>
