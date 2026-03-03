@@ -7,9 +7,10 @@
  * 使用 SocketTask 方式避免与微信开发工具日志回显冲突
  */
 
-import { apiConfirmCall, apiConfirmEndConsult, apiRejectEndConsult } from '@/utils/request.js'
+import { apiConfirmCall, apiConfirmEndConsult, apiRejectEndConsult, BASE_URL } from '@/utils/request.js'
 
-const WS_BASE = 'ws://127.0.0.1:8084'
+// 根据 HTTP BASE_URL 自动生成 WebSocket 地址
+const WS_BASE = BASE_URL.replace(/^http/, 'ws')
 
 let socketTask = null
 let heartbeatTimer = null
