@@ -229,6 +229,15 @@ export default {
     async sendMessage() {
       if (!this.inputText.trim()) return
       
+      // 状态检查：只有就诊中(20)和等待确认结束(25)状态才能发送消息
+      if (![20, 25].includes(this.appointmentStatus)) {
+        uni.showToast({
+          title: '请等待医生叫号后再发送消息',
+          icon: 'none'
+        })
+        return
+      }
+      
       const content = this.inputText.trim()
       this.inputText = ''
       
