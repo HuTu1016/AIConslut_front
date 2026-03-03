@@ -1,23 +1,26 @@
 /**
- * WebSocket 通知连接管理
+ * WebSocket 通知连接管理（使用 SocketTask 方式）
  * 
  * 用于接收后端实时推送的通知（叫号、排队变动等）
  * 连接端点：ws://host/ws/notify?userId=xxx&role=USER
+ * 
+ * 使用 SocketTask 方式避免与微信开发工具日志回显冲突
  */
 
-const WS_BASE = 'ws://192.168.1.73:8080'
+const WS_BASE = 'ws://127.0.0.1:8084'
 
 let socketTask = null
 let heartbeatTimer = null
 let reconnectTimer = null
 let reconnectCount = 0
+let currentUserId = null
 const MAX_RECONNECT = 5
 
 /** 通知监听器 */
 const listeners = {}
 
 /**
- * 连接通知 WebSocket
+ * 连接通知 WebSocket（使用 SocketTask 方式）
  * @param {string|number} userId 用户ID
  */
 export function connectNotifyWs(userId) {
@@ -26,22 +29,25 @@ export function connectNotifyWs(userId) {
         closeNotifyWs()
     }
 
+    currentUserId = userId
     const url = `${WS_BASE}/ws/notify?userId=${userId}&role=USER`
     console.log('[NotifyWS] 正在连接:', url)
 
+    // 使用 SocketTask 方式，避免与开发工具日志回显冲突
     socketTask = uni.connectSocket({
         url,
         success: () => console.log('[NotifyWS] 连接请求已发送'),
         fail: (err) => console.error('[NotifyWS] 连接失败:', err)
     })
 
-    uni.onSocketOpen(() => {
+    // 使用 SocketTask 实例方法绑定事件
+    socketTask.onOpen(() => {
         console.log('[NotifyWS] 连接成功')
         reconnectCount = 0
         startHeartbeat()
     })
 
-    uni.onSocketMessage((res) => {
+    socketTask.onMessage((res) => {
         try {
             const msg = JSON.parse(res.data)
             console.log('[NotifyWS] 收到通知:', msg)
@@ -51,14 +57,14 @@ export function connectNotifyWs(userId) {
         }
     })
 
-    uni.onSocketClose(() => {
+    socketTask.onClose(() => {
         console.log('[NotifyWS] 连接关闭')
         stopHeartbeat()
         socketTask = null
-        tryReconnect(userId)
+        tryReconnect(currentUserId)
     })
 
-    uni.onSocketError((err) => {
+    socketTask.onError((err) => {
         console.error('[NotifyWS] 连接错误:', err)
     })
 }
@@ -71,9 +77,18 @@ export function closeNotifyWs() {
     clearTimeout(reconnectTimer)
     reconnectCount = MAX_RECONNECT // 防止自动重连
     if (socketTask) {
-        uni.closeSocket()
+        socketTask.close()
         socketTask = null
     }
+    currentUserId = null
+}
+
+/**
+ * 检查 WebSocket 是否已连接
+ * @returns {boolean}
+ */
+export function isWsConnected() {
+    return socketTask !== null
 }
 
 /**
@@ -110,17 +125,22 @@ function handleNotification(msg) {
 
     // 叫号通知：弹出提示并引导进入聊天室
     if (type === 'CALL_NUMBER') {
+        console.log('[NotifyWS] 处理叫号通知，准备弹窗:', data)
         uni.showModal({
             title: '叫号通知',
             content: data.message || '轮到您就诊了',
-            confirmText: '进入聊天室',
+            confirmText: '立即前往',
             cancelText: '稍后',
             success: (res) => {
+                console.log('[NotifyWS] 弹窗结果:', res)
                 if (res.confirm) {
                     uni.navigateTo({
                         url: `/pages/consult/chat?appointmentId=${data.appointmentId}`
                     })
                 }
+            },
+            fail: (err) => {
+                console.error('[NotifyWS] 弹窗失败:', err)
             }
         })
     }
@@ -144,7 +164,7 @@ function handleNotification(msg) {
 function startHeartbeat() {
     heartbeatTimer = setInterval(() => {
         if (socketTask) {
-            uni.sendSocketMessage({
+            socketTask.send({
                 data: JSON.stringify({ type: 'ping' }),
                 fail: () => { }
             })

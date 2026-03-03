@@ -37,13 +37,13 @@
         <text class="num">{{ stats.pendingCount }}</text>
         <text class="label">待就诊</text>
       </view>
+      <view class="stat-item" @click="goAppointments('20')">
+        <text class="num">{{ stats.consultingCount }}</text>
+        <text class="label">就诊中</text>
+      </view>
       <view class="stat-item" @click="goAppointments('30')">
         <text class="num">{{ stats.completedCount }}</text>
         <text class="label">已完成</text>
-      </view>
-      <view class="stat-item" @click="goMessages">
-        <text class="num">{{ stats.unreadCount }}</text>
-        <text class="label">未读消息</text>
       </view>
     </view>
     
@@ -141,6 +141,7 @@ export default {
       userInfo: {},
       stats: {
         pendingCount: 0,
+        consultingCount: 0,
         completedCount: 0,
         unreadCount: 0
       },
@@ -231,6 +232,7 @@ export default {
         ])
         if (statsRes && statsRes.data) {
           this.stats.pendingCount = statsRes.data.pendingCount || 0
+          this.stats.consultingCount = statsRes.data.consultingCount || 0
           this.stats.completedCount = statsRes.data.completedCount || 0
         }
         if (unreadRes && unreadRes.data) {

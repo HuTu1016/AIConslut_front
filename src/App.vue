@@ -1,6 +1,9 @@
 <script>
-import { connectNotifyWs, closeNotifyWs } from '@/utils/notify-ws.js'
+import { connectNotifyWs, closeNotifyWs, isWsConnected } from '@/utils/notify-ws.js'
 import { getUserInfo, isLoggedIn } from '@/utils/store.js'
+
+// 防抖标记，避免 onLaunch 和 onShow 同时触发导致重复连接
+let wsInitialized = false
 
 export default {
   onLaunch: function () {
@@ -10,36 +13,45 @@ export default {
   },
   onShow: function () {
     console.log('App Show')
-    // 应用切换到前台时，检查并重连 WebSocket
-    this.initNotifyWebSocket()
+    // 应用从后台切换到前台时，延迟检查并重连 WebSocket（避免与 onLaunch 冲突）
+    setTimeout(() => {
+      if (!isWsConnected()) {
+        wsInitialized = false
+        this.initNotifyWebSocket()
+      }
+    }, 1000)
   },
   onHide: function () {
     console.log('App Hide')
-    // 应用切换到后台时，可以选择保持连接（移动端后台通常会自动断开）
   },
   methods: {
     /**
      * 初始化通知 WebSocket 连接
-     * 只有已登录用户才连接
+     * 只有已登录用户才连接，且防止重复初始化
      */
     initNotifyWebSocket() {
+      if (wsInitialized) {
+        console.log('[App] WebSocket 已初始化，跳过')
+        return
+      }
       if (isLoggedIn()) {
         const userInfo = getUserInfo()
         if (userInfo && userInfo.id) {
+          wsInitialized = true
           console.log('[App] 用户已登录，连接通知 WebSocket, userId:', userInfo.id)
           connectNotifyWs(userInfo.id)
         }
       }
     }
   },
-  // 全局监听登录/登出事件，用于连接/断开 WebSocket
   globalData: {
-    // 提供给外部调用的方法
     onLogin: function(userId) {
+      wsInitialized = true
       console.log('[App] 登录成功，连接通知 WebSocket, userId:', userId)
       connectNotifyWs(userId)
     },
     onLogout: function() {
+      wsInitialized = false
       console.log('[App] 登出，断开通知 WebSocket')
       closeNotifyWs()
     }

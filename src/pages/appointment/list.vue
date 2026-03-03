@@ -122,6 +122,7 @@ export default {
         { label: '全部', value: '' },
         { label: '待支付', value: '0' },
         { label: '待就诊', value: '10' },
+        { label: '就诊中', value: '20' },
         { label: '已完成', value: '30' },
         { label: '已取消', value: '40' }
       ],
