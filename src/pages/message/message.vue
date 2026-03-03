@@ -29,7 +29,7 @@
         >
           <!-- 头像区域 -->
           <view class="avatar-box" :class="getAvatarClass(item)">
-            <image v-if="item._type === 'DOCTOR'" class="avatar" :src="item.doctorAvatar || '/static/default-avatar.png'" mode="aspectFill"></image>
+            <image v-if="item._type === 'DOCTOR'" class="avatar" :src="$resolveImage(item.doctorAvatar)" mode="aspectFill"></image>
             <image v-else-if="item._type === 'AI'" class="avatar" src="/static/tabbar/ai.png" mode="aspectFill"></image>
             <text v-else class="notify-emoji">{{ getNotifyIcon(item.notifyType) }}</text>
           </view>

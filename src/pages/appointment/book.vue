@@ -5,7 +5,7 @@
     
     <!-- 医生信息 -->
     <view class="doctor-info">
-      <image class="avatar" :src="doctor.avatarUrl || '/static/default-avatar.png'" mode="aspectFill"></image>
+      <image class="avatar" :src="$resolveImage(doctor.avatarUrl)" mode="aspectFill"></image>
       <view class="info">
         <view class="name-row">
           <text class="name">{{ doctor.name }}</text>

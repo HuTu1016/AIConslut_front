@@ -5,7 +5,7 @@
     
     <!-- 顶部信息 -->
     <view class="chat-header">
-      <image class="avatar" :src="doctor.avatarUrl || '/static/default-avatar.png'" mode="aspectFill"></image>
+      <image class="avatar" :src="$resolveImage(doctor.avatarUrl)" mode="aspectFill"></image>
       <view class="info">
         <text class="name">{{ doctor.name }}</text>
         <text class="status">{{ doctor.online ? '在线' : '离线' }}</text>
@@ -37,7 +37,7 @@
           <!-- 普通消息 -->
           <template v-else>
             <view class="avatar-wrapper" v-if="msg.senderRole === 'DOCTOR'">
-              <image class="avatar" :src="doctor.avatarUrl || '/static/default-avatar.png'" mode="aspectFill"></image>
+              <image class="avatar" :src="$resolveImage(doctor.avatarUrl)" mode="aspectFill"></image>
             </view>
             
             <view class="bubble">

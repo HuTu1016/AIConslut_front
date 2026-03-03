@@ -6,7 +6,7 @@
     <!-- 问诊信息 -->
     <view class="header-card">
       <view class="doctor-info">
-        <image class="avatar" :src="record.doctorAvatar || '/static/default-avatar.png'" mode="aspectFill"></image>
+        <image class="avatar" :src="$resolveImage(record.doctorAvatar)" mode="aspectFill"></image>
         <view class="info">
           <text class="name">{{ record.doctorName }}</text>
           <text class="dept">{{ record.departmentName }}</text>

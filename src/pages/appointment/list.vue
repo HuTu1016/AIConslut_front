@@ -27,7 +27,7 @@
         </view>
         
         <view class="card-body">
-          <image class="avatar" :src="item.doctorAvatar || '/static/default-avatar.png'" mode="aspectFill"></image>
+          <image class="avatar" :src="$resolveImage(item.doctorAvatar)" mode="aspectFill"></image>
           <view class="info">
             <view class="name-row">
               <text class="name">{{ item.doctorName }}</text>

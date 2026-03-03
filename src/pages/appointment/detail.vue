@@ -21,7 +21,7 @@
     <view class="section">
       <view class="section-title">医生信息</view>
       <view class="doctor-info">
-        <image class="avatar" :src="appointment.doctorAvatar || '/static/default-avatar.png'" mode="aspectFill"></image>
+        <image class="avatar" :src="$resolveImage(appointment.doctorAvatar)" mode="aspectFill"></image>
         <view class="info">
           <view class="name-row">
             <text class="name">{{ appointment.doctorName }}</text>

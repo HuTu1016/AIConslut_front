@@ -20,7 +20,7 @@
           @click="goDetail(item)"
         >
           <view class="card-header">
-            <image class="doc-avatar" :src="item.doctorAvatar || '/static/default-avatar.png'" mode="aspectFill"></image>
+            <image class="doc-avatar" :src="$resolveImage(item.doctorAvatar)" mode="aspectFill"></image>
             <view class="doc-info">
               <text class="doc-name">{{ item.doctorName }} 医生</text>
               <text class="dept-name">{{ item.departmentName || '综合问诊' }}</text>

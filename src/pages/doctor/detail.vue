@@ -8,7 +8,7 @@
       <view class="basic-info">
         <image 
           class="avatar" 
-          :src="doctor.avatarUrl || '/static/default-avatar.png'" 
+          :src="$resolveImage(doctor.avatarUrl)" 
           mode="aspectFill"
         ></image>
         <view class="info">

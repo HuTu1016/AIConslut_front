@@ -2,7 +2,7 @@
   <view class="evaluation-container">
     <!-- 医生信息 -->
     <view class="doctor-card" v-if="appointment">
-      <image class="doctor-avatar" :src="appointment.doctorAvatar || '/static/default-avatar.png'" mode="aspectFill" />
+      <image class="doctor-avatar" :src="$resolveImage(appointment.doctorAvatar)" mode="aspectFill" />
       <view class="doctor-info">
         <text class="doctor-name">{{ appointment.doctorName }}</text>
         <text class="doctor-dept">{{ appointment.departmentName }}</text>
