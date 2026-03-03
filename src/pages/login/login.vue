@@ -67,6 +67,7 @@
 <script>
 import { apiLogin, apiGetUserInfo } from '@/utils/request.js'
 import { saveLoginInfo } from '@/utils/store.js'
+import { connectNotifyWs } from '@/utils/notify-ws.js'
 
 export default {
   data() {
@@ -113,6 +114,11 @@ export default {
         
         // 保存登录信息
         saveLoginInfo(res.data)
+        
+        // 登录成功后连接通知 WebSocket
+        if (res.data?.userInfo?.id) {
+          connectNotifyWs(res.data.userInfo.id)
+        }
         
         uni.showToast({
           title: '登录成功',
@@ -164,15 +170,20 @@ export default {
         
         // 从后端获取真实用户信息
         const res = await apiGetUserInfo()
+        let userId = 1
         if (res.data) {
           saveLoginInfo({
             token: devToken,
             userInfo: res.data
           })
+          userId = res.data.id || 1
         } else {
           // 后端未返回用户信息时的基本保存
           saveLoginInfo({ token: devToken, userInfo: { id: 1 } })
         }
+        
+        // 登录成功后连接通知 WebSocket
+        connectNotifyWs(userId)
         
         uni.showToast({
           title: '登录成功',

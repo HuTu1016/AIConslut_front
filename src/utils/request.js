@@ -17,7 +17,7 @@ if (DEV_MODE && !uni.getStorageSync('token')) {
 // ==================== 开发测试配置 END ====================
 
 // API基础地址配置
-export const BASE_URL = 'http://192.168.0.213:8080'
+export const BASE_URL = 'http://192.168.0.213:8084'
 
 // 请求超时时间
 const TIMEOUT = 30000

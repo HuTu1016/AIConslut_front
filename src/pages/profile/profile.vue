@@ -128,6 +128,7 @@ import TabBar from '@/components/TabBar/TabBar.vue'
 import FloatingAI from '@/components/FloatingAI/FloatingAI.vue'
 import { apiGetUserInfo, apiGetUnreadCount, apiUploadAvatar, apiGetAppointmentStats, apiVerifyIdentity } from '@/utils/request.js'
 import { getUserInfo, isLoggedIn, clearLoginInfo } from '@/utils/store.js'
+import { closeNotifyWs } from '@/utils/notify-ws.js'
 
 export default {
   components: {
@@ -370,6 +371,8 @@ export default {
         content: '确定要退出登录吗？',
         success: (res) => {
           if (res.confirm) {
+            // 断开通知 WebSocket 连接
+            closeNotifyWs()
             clearLoginInfo()
             this.isLoggedIn = false
             this.userInfo = {}
