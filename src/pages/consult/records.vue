@@ -130,7 +130,7 @@ export default {
   top: 0; left: 0;
   width: 100%;
   height: 280rpx;
-  background: var(--primary-gradient);
+  background: #0F766E;
   border-radius: 0 0 40rpx 40rpx;
   z-index: 0;
 }
