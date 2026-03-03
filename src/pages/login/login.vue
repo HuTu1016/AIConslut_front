@@ -15,33 +15,6 @@
       <text class="app-desc">您的私人健康管理专家</text>
     </view>
 
-    <!-- 功能亮点 -->
-    <view class="feature-section">
-      <view class="feature-card">
-        <view class="feature-item">
-          <view class="feature-icon-wrap icon-blue">
-            <text class="feature-icon">🏥</text>
-          </view>
-          <text class="feature-label">在线预约挂号</text>
-          <text class="feature-sub">随时随地预约</text>
-        </view>
-        <view class="feature-item">
-          <view class="feature-icon-wrap icon-teal">
-            <text class="feature-icon">💬</text>
-          </view>
-          <text class="feature-label">专家在线问诊</text>
-          <text class="feature-sub">名医一对一</text>
-        </view>
-        <view class="feature-item">
-          <view class="feature-icon-wrap icon-cyan">
-            <text class="feature-icon">🤖</text>
-          </view>
-          <text class="feature-label">AI智能导诊</text>
-          <text class="feature-sub">精准分诊推荐</text>
-        </view>
-      </view>
-    </view>
-
     <!-- 登录区域 -->
     <view class="login-section">
       <button 
@@ -188,7 +161,7 @@ export default {
   top: 0;
   left: 0;
   right: 0;
-  height: 520rpx;
+  height: 600rpx;
   background: linear-gradient(145deg, #0B3D6B 0%, #0F5C8E 40%, #1A8A7D 100%);
   border-radius: 0 0 60rpx 60rpx;
   overflow: hidden;
@@ -222,7 +195,7 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 120rpx;
+  padding-top: 140rpx;
 
   .logo-wrapper {
     width: 140rpx;
@@ -257,70 +230,10 @@ export default {
   }
 }
 
-/* 功能亮点卡片 */
-.feature-section {
-  position: relative;
-  z-index: 2;
-  padding: 0 40rpx;
-  margin-top: -20rpx;
-
-  .feature-card {
-    background: #FFFFFF;
-    border-radius: 24rpx;
-    padding: 48rpx 24rpx;
-    display: flex;
-    justify-content: space-around;
-    box-shadow: 0 8rpx 40rpx rgba(11, 61, 107, 0.08);
-  }
-
-  .feature-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .feature-icon-wrap {
-    width: 88rpx;
-    height: 88rpx;
-    border-radius: 24rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 16rpx;
-  }
-
-  .icon-blue {
-    background: linear-gradient(135deg, #E8F2FC 0%, #D0E5F7 100%);
-  }
-
-  .icon-teal {
-    background: linear-gradient(135deg, #E3F7F4 0%, #C5EDE6 100%);
-  }
-
-  .icon-cyan {
-    background: linear-gradient(135deg, #E6F6F9 0%, #CAECF2 100%);
-  }
-
-  .feature-icon {
-    font-size: 40rpx;
-  }
-
-  .feature-label {
-    font-size: 24rpx;
-    color: #2C3E50;
-    font-weight: 600;
-    margin-bottom: 4rpx;
-  }
-
-  .feature-sub {
-    font-size: 20rpx;
-    color: #95A5B5;
-  }
-}
-
 /* 登录区域 */
 .login-section {
-  padding: 60rpx 50rpx 0;
+  margin-top: 260rpx;
+  padding: 0 50rpx;
 
   .wechat-btn {
     width: 100%;
