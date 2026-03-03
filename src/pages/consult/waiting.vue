@@ -56,11 +56,22 @@
         <text class="tips-item">3. 问诊时段内均可候诊，无需按精确时间到达</text>
       </view>
 
-      <!-- 已接诊提示 -->
-      <view class="consult-ready" v-if="appointmentStatus === 20">
+      <!-- 已叫号提示（状态15） -->
+      <view class="consult-ready" v-if="appointmentStatus === 15">
         <text class="ready-icon">🔔</text>
-        <text class="ready-text">医生已接诊，请进入咨询室</text>
-        <button class="ready-btn" @click="goChat">进入咨询室</button>
+        <text class="ready-text">轮到您就诊了，请点击下方按钮进入</text>
+        <text class="time-hint" v-if="!isWithinConsultTime && scheduleDate">
+          ⏰ 就诊时段：{{ scheduleDate }} {{ scheduleStartTime }} - {{ scheduleEndTime }}。请在就诊时间内进入。
+        </text>
+        <button class="ready-btn" @click="goChat" :disabled="!isWithinConsultTime">
+          {{ isWithinConsultTime ? '立即前往' : '未到就诊时间' }}
+        </button>
+      </view>
+      <!-- 已进入就诊中（状态20） -->
+      <view class="consult-ready" v-if="appointmentStatus === 20">
+        <text class="ready-icon">👨‍⚕️</text>
+        <text class="ready-text">问诊进行中，点击进入聊天室</text>
+        <button class="ready-btn" @click="goChatDirect">进入咨询室</button>
       </view>
     </view>
 
@@ -72,7 +83,7 @@
 </template>
 
 <script>
-import { apiGetQueueInfo } from '@/utils/request.js'
+import { apiGetQueueInfo, apiConfirmCall } from '@/utils/request.js'
 
 export default {
   data() {
@@ -85,7 +96,11 @@ export default {
       doctorId: '',
       departmentName: '',
       ticketNo: '',
-      pollTimer: null
+      pollTimer: null,
+      // 排班时间范围
+      scheduleDate: '',
+      scheduleStartTime: '',
+      scheduleEndTime: ''
     }
   },
   computed: {
@@ -104,6 +119,16 @@ export default {
       if (this.appointmentStatus === 20) return 'status-active'
       if (this.appointmentStatus === 30) return 'status-done'
       return ''
+    },
+    /** 判断当前时间是否在就诊时间段内 */
+    isWithinConsultTime() {
+      if (!this.scheduleDate || !this.scheduleStartTime || !this.scheduleEndTime) {
+        return false
+      }
+      const now = new Date()
+      const start = new Date(`${this.scheduleDate}T${this.scheduleStartTime}`)
+      const end = new Date(`${this.scheduleDate}T${this.scheduleEndTime}`)
+      return now >= start && now <= end
     }
   },
   onLoad(options) {
@@ -132,12 +157,32 @@ export default {
           this.doctorId = d.doctorId || ''
           this.departmentName = d.departmentName || ''
           this.aheadCount = d.aheadCount !== undefined ? d.aheadCount : Math.max(0, this.queuePosition - 1)
+          // 排班时间范围
+          this.scheduleDate = d.scheduleDate || ''
+          this.scheduleStartTime = d.scheduleStartTime || ''
+          this.scheduleEndTime = d.scheduleEndTime || ''
         }
       } catch (err) {
         console.error('加载排队信息失败:', err)
       }
     },
-    goChat() {
+    /** 患者确认前往（状态15→ 20，再转到聊天页） */
+    async goChat() {
+      if (!this.isWithinConsultTime) {
+        uni.showToast({ title: '当前不在就诊时间内', icon: 'none' })
+        return
+      }
+      try {
+        await apiConfirmCall(this.appointmentId)
+      } catch (err) {
+        console.error('确认前往失败:', err)
+      }
+      uni.redirectTo({
+        url: `/pages/consult/chat?appointmentId=${this.appointmentId}&doctorId=${this.doctorId}&doctorName=${this.doctorName}`
+      })
+    },
+    /** 已经就诊中（状态20），直接进入聊天页 */
+    goChatDirect() {
       uni.redirectTo({
         url: `/pages/consult/chat?appointmentId=${this.appointmentId}&doctorId=${this.doctorId}&doctorName=${this.doctorName}`
       })
@@ -293,6 +338,17 @@ export default {
     height: 80rpx;
     line-height: 80rpx;
     &::after { border: none; }
+    &[disabled] {
+      background: rgba(255,255,255,0.5);
+      color: #999;
+    }
+  }
+  .time-hint {
+    display: block;
+    font-size: 24rpx;
+    color: rgba(255,255,255,0.85);
+    margin: 12rpx 0 8rpx;
+    text-align: center;
   }
 }
 

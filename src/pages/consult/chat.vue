@@ -41,7 +41,10 @@
             </view>
             
             <view class="bubble">
-              <text class="content">{{ msg.content }}</text>
+              <!-- 图片消息 -->
+              <image v-if="msg.msgType === 2" class="msg-image" :src="getImageUrl(msg.content)" mode="widthFix" @click="previewImage(msg.content)"></image>
+              <!-- 文本消息 -->
+              <text v-else class="content">{{ msg.content }}</text>
               <text class="time">{{ formatTime(msg.createdAt) }}</text>
             </view>
             
@@ -62,14 +65,34 @@
     <!-- 医生请求结束问诊确认条 -->
     <view class="end-confirm-bar" v-if="appointmentStatus === 25">
       <text class="end-confirm-text">👨‍⚕️ 医生请求结束本次问诊</text>
+      <text class="end-confirm-sub">如无操作，5分钟后自动结束</text>
       <view class="end-confirm-actions">
         <button class="btn-reject" @click="rejectEnd">继续问诊</button>
-        <button class="btn-confirm" @click="confirmEnd">同意结束</button>
+        <button class="btn-confirm" @click="confirmEnd">结束问诊</button>
       </view>
     </view>
 
-    <!-- 底部输入 -->
-    <view class="input-area">
+    <!-- 底部输入 / 非就诊时间提示 / 状态限制 -->
+    <view class="time-closed-bar" v-if="!isWithinConsultTime">
+      <text class="time-closed-icon">🕐</text>
+      <text class="time-closed-text">当前不在就诊时间内，无法发送消息</text>
+      <text class="time-closed-range" v-if="scheduleDate">就诊时段：{{ scheduleDate }} {{ scheduleStartTime }} - {{ scheduleEndTime }}</text>
+    </view>
+    <view class="time-closed-bar" v-else-if="appointmentStatus === 15">
+      <text class="time-closed-icon">🔔</text>
+      <text class="time-closed-text">已叫号，请点击下方按钮确认前往</text>
+      <button class="confirm-call-btn" @click="handleConfirmCall">立即前往</button>
+    </view>
+    <view class="time-closed-bar" v-else-if="appointmentStatus === 25">
+      <text class="time-closed-icon">⏳</text>
+      <text class="time-closed-text">等待结束确认中，无法发送消息</text>
+    </view>
+    <view class="input-area" v-else-if="appointmentStatus === 20">
+      <view class="input-actions">
+        <view class="action-btn" @click="chooseImage">
+          <text class="action-icon">📷</text>
+        </view>
+      </view>
       <input 
         class="input-box" 
         type="text" 
@@ -84,7 +107,7 @@
 </template>
 
 <script>
-import { apiSendMessage, apiGetMessages, apiMarkMessagesRead, apiGetAppointmentDetail, apiConfirmEndConsult, apiRejectEndConsult } from '@/utils/request.js'
+import { apiSendMessage, apiGetMessages, apiMarkMessagesRead, apiGetAppointmentDetail, apiConfirmEndConsult, apiRejectEndConsult, apiConfirmCall, apiUploadConsultImage, BASE_URL } from '@/utils/request.js'
 
 export default {
   data() {
@@ -108,7 +131,27 @@ export default {
       showTimeoutWarning: false,
       appointmentStatus: 20,  // 当前预约状态
       scrollIntoViewId: '',
-      isFirstLoad: true
+      isFirstLoad: true,
+      // 排班时间范围（就诊时间窗口）
+      scheduleDate: '',
+      scheduleStartTime: '',
+      scheduleEndTime: '',
+      timeCheckTimer: null
+    }
+  },
+  computed: {
+    /** 判断当前时间是否在就诊时间段内 */
+    isWithinConsultTime() {
+      if (!this.scheduleDate || !this.scheduleStartTime || !this.scheduleEndTime) {
+        return false
+      }
+      const now = new Date()
+      // 构造就诊时间的开始和结束 Date 对象
+      const startStr = `${this.scheduleDate}T${this.scheduleStartTime}`
+      const endStr = `${this.scheduleDate}T${this.scheduleEndTime}`
+      const start = new Date(startStr)
+      const end = new Date(endStr)
+      return now >= start && now <= end
     }
   },
   onLoad(options) {
@@ -120,10 +163,16 @@ export default {
     this.loadMessages()
     this.startPolling()
     this.startTimeoutCheck()
+    // 每分钟刷新时间判断
+    this.timeCheckTimer = setInterval(() => { this.$forceUpdate() }, 60000)
   },
   onUnload() {
     this.stopPolling()
     this.stopTimeoutCheck()
+    if (this.timeCheckTimer) {
+      clearInterval(this.timeCheckTimer)
+      this.timeCheckTimer = null
+    }
   },
   methods: {
     async loadDoctorInfo() {
@@ -135,6 +184,10 @@ export default {
           this.doctor.name = res.data.doctorName || '医生'
           this.doctor.avatarUrl = res.data.doctorAvatar || ''
           this.appointmentStatus = res.data.status
+          // 排班时间范围
+          this.scheduleDate = res.data.scheduleDate || ''
+          this.scheduleStartTime = res.data.scheduleStartTime || ''
+          this.scheduleEndTime = res.data.scheduleEndTime || ''
         }
       } catch (err) {
         console.error('获取医生信息失败:', err)
@@ -145,13 +198,6 @@ export default {
         const res = await apiGetMessages(this.appointmentId)
         if (res.code === 200 && res.data) {
           this.messages = res.data
-          // 检查是否已签到（有USER发的消息）
-          if (!this.hasCheckedIn) {
-            const userMsg = this.messages.find(m => m.senderRole === 'USER')
-            if (userMsg) {
-              this.hasCheckedIn = true
-            }
-          }
           
           if (this.isFirstLoad) {
             this.isFirstLoad = false
@@ -228,17 +274,21 @@ export default {
     
     async sendMessage() {
       if (!this.inputText.trim()) return
-      
-      // 状态检查：只有就诊中(20)和等待确认结束(25)状态才能发送消息
-      if (![20, 25].includes(this.appointmentStatus)) {
+      // 就诊时间校验（防护）
+      if (!this.isWithinConsultTime) {
+        uni.showToast({ title: '当前不在就诊时间内', icon: 'none' })
+        return
+      }
+      const content = this.inputText.trim()
+      // 状态检查：仅就诊中(20)可发送消息
+      if (this.appointmentStatus !== 20) {
         uni.showToast({
-          title: '请等待医生叫号后再发送消息',
+          title: '当前状态无法发送消息',
           icon: 'none'
         })
         return
       }
       
-      const content = this.inputText.trim()
       this.inputText = ''
       
       // 先添加到本地
@@ -255,16 +305,6 @@ export default {
           appointmentId: this.appointmentId,
           content: content
         })
-        
-        // 首次发消息 = 签到成功
-        if (!this.hasCheckedIn) {
-          this.hasCheckedIn = true
-          uni.showToast({
-            title: '已签到',
-            icon: 'success',
-            duration: 2000
-          })
-        }
       } catch (err) {
         console.error('发送失败:', err)
         uni.showToast({ title: '发送失败', icon: 'none' })
@@ -311,6 +351,69 @@ export default {
       } catch (err) {
         uni.showToast({ title: '操作失败', icon: 'none' })
       }
+    },
+
+    /** 患者确认前往（状态15→ 20） */
+    async handleConfirmCall() {
+      try {
+        await apiConfirmCall(this.appointmentId)
+        this.appointmentStatus = 20
+        uni.showToast({ title: '已进入问诊', icon: 'success' })
+      } catch (err) {
+        uni.showToast({ title: '操作失败', icon: 'none' })
+      }
+    },
+
+    /** 选择图片发送 */
+    chooseImage() {
+      uni.chooseImage({
+        count: 1,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera'],
+        success: (res) => {
+          const tempFilePath = res.tempFilePaths[0]
+          this.uploadImage(tempFilePath)
+        }
+      })
+    },
+
+    /** 上传图片 */
+    async uploadImage(filePath) {
+      uni.showLoading({ title: '发送中...' })
+      try {
+        const res = await apiUploadConsultImage(this.appointmentId, filePath)
+        if (res.code === 200 && res.data) {
+          // 图片发送成功，添加到本地消息列表
+          this.messages.push({
+            id: res.data.messageId || Date.now(),
+            senderRole: 'USER',
+            content: res.data.imageUrl,
+            msgType: 2,
+            createdAt: new Date().toISOString()
+          })
+          this.scrollToBottom()
+        }
+      } catch (err) {
+        console.error('图片发送失败:', err)
+      } finally {
+        uni.hideLoading()
+      }
+    },
+
+    /** 获取完整图片URL */
+    getImageUrl(url) {
+      if (!url) return ''
+      if (url.startsWith('http')) return url
+      return BASE_URL + url
+    },
+
+    /** 预览图片 */
+    previewImage(url) {
+      const fullUrl = this.getImageUrl(url)
+      uni.previewImage({
+        urls: [fullUrl],
+        current: fullUrl
+      })
     }
   }
 }
@@ -486,6 +589,12 @@ export default {
   }
 }
 
+.msg-image {
+  max-width: 400rpx;
+  min-width: 200rpx;
+  border-radius: 12rpx;
+}
+
 .input-area {
   display: flex;
   align-items: center;
@@ -496,6 +605,26 @@ export default {
   box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.03);
   flex-shrink: 0;
   z-index: 10;
+  
+  .input-actions {
+    display: flex;
+    align-items: center;
+    margin-right: 16rpx;
+    
+    .action-btn {
+      width: 70rpx;
+      height: 70rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #F5F7FA;
+      border-radius: 50%;
+      
+      .action-icon {
+        font-size: 36rpx;
+      }
+    }
+  }
   
   .input-box {
     flex: 1;
@@ -539,6 +668,14 @@ export default {
     font-size: 28rpx;
     color: #D46B08;
     font-weight: 500;
+    margin-bottom: 8rpx;
+  }
+
+  .end-confirm-sub {
+    display: block;
+    font-size: 24rpx;
+    color: #D46B08;
+    opacity: 0.7;
     margin-bottom: 16rpx;
   }
 
@@ -565,6 +702,48 @@ export default {
       color: #fff;
       background: linear-gradient(135deg, #52C41A, #73D13D);
     }
+  }
+}
+
+.time-closed-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24rpx 30rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(135deg, #FFF1F0, #FFE4E1);
+  border-top: 1rpx solid #FFA39E;
+  flex-shrink: 0;
+  z-index: 10;
+
+  .time-closed-icon {
+    font-size: 40rpx;
+    margin-bottom: 8rpx;
+  }
+
+  .time-closed-text {
+    font-size: 28rpx;
+    color: #CF1322;
+    font-weight: 500;
+  }
+
+  .time-closed-range {
+    font-size: 24rpx;
+    color: #A8071A;
+    margin-top: 8rpx;
+    opacity: 0.8;
+  }
+
+  .confirm-call-btn {
+    margin-top: 16rpx;
+    width: 280rpx;
+    height: 72rpx;
+    line-height: 72rpx;
+    font-size: 28rpx;
+    color: #fff;
+    background: linear-gradient(135deg, #52C41A, #73D13D);
+    border-radius: 36rpx;
+    &::after { border: none; }
   }
 }
 </style>

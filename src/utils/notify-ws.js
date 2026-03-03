@@ -7,6 +7,8 @@
  * 使用 SocketTask 方式避免与微信开发工具日志回显冲突
  */
 
+import { apiConfirmCall, apiConfirmEndConsult, apiRejectEndConsult } from '@/utils/request.js'
+
 const WS_BASE = 'ws://127.0.0.1:8084'
 
 let socketTask = null
@@ -123,17 +125,22 @@ function handleNotification(msg) {
         listeners[type].forEach(cb => cb(data))
     }
 
-    // 叫号通知：弹出提示并引导进入聊天室
+    // 叫号通知：弹出提示，点击"立即前往"时先调API确认（15→20），再跳转
     if (type === 'CALL_NUMBER') {
         console.log('[NotifyWS] 处理叫号通知，准备弹窗:', data)
         uni.showModal({
             title: '叫号通知',
-            content: data.message || '轮到您就诊了',
+            content: data.message || '轮到您就诊了，请立即进入问诊聊天室',
             confirmText: '立即前往',
             cancelText: '稍后',
-            success: (res) => {
-                console.log('[NotifyWS] 弹窗结果:', res)
+            success: async (res) => {
+                console.log('[NotifyWS] 叫号弹窗结果:', res)
                 if (res.confirm) {
+                    try {
+                        await apiConfirmCall(data.appointmentId)
+                    } catch (err) {
+                        console.error('[NotifyWS] 确认前往失败:', err)
+                    }
                     uni.navigateTo({
                         url: `/pages/consult/chat?appointmentId=${data.appointmentId}`
                     })
@@ -150,7 +157,31 @@ function handleNotification(msg) {
         // 由等候页面的监听器自行处理
     }
 
-    // 问诊结束通知
+    // 医生请求结束问诊：弹出Modal让患者选择
+    if (type === 'END_REQUEST') {
+        console.log('[NotifyWS] 处理结束问诊请求:', data)
+        uni.showModal({
+            title: '问诊结束确认',
+            content: data.message || '医生请求结束本次问诊',
+            confirmText: '结束问诊',
+            cancelText: '继续问诊',
+            success: async (res) => {
+                try {
+                    if (res.confirm) {
+                        await apiConfirmEndConsult(data.appointmentId)
+                        uni.showToast({ title: '问诊已结束', icon: 'success' })
+                    } else {
+                        await apiRejectEndConsult(data.appointmentId)
+                        uni.showToast({ title: '已继续问诊', icon: 'success' })
+                    }
+                } catch (err) {
+                    console.error('[NotifyWS] 操作失败:', err)
+                }
+            }
+        })
+    }
+
+    // 问诊已完成通知（自动结束/对方确认后的最终通知）
     if (type === 'CONSULT_END') {
         uni.showToast({
             title: '问诊已结束',

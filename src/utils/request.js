@@ -548,6 +548,17 @@ export function apiRejectEndConsult(appointmentId) {
 }
 
 /**
+ * 患者确认前往（叫号后点击"立即前往"，状态15→20）
+ * @param {number} appointmentId 预约ID
+ */
+export function apiConfirmCall(appointmentId) {
+  return request({
+    url: `/api/v1/user/consults/sessions/${appointmentId}/confirm-call`,
+    method: 'POST'
+  })
+}
+
+/**
  * 创建问诊记录
  * @param {Object} data 问诊信息
  */
@@ -712,6 +723,44 @@ export function apiDeleteAiSession(sessionId) {
   return request({
     url: `/api/v1/user/ai/sessions/${sessionId}`,
     method: 'DELETE'
+  })
+}
+
+/**
+ * 上传问诊图片
+ * @param {string} appointmentId 预约ID
+ * @param {string} filePath 本地图片路径
+ */
+export function apiUploadConsultImage(appointmentId, filePath) {
+  return new Promise((resolve, reject) => {
+    const token = uni.getStorageSync('token')
+    uni.uploadFile({
+      url: BASE_URL + '/api/v1/user/consults/messages/upload-image',
+      filePath: filePath,
+      name: 'image',
+      formData: { appointmentId: appointmentId },
+      header: {
+        'Authorization': token ? `Bearer ${token}` : ''
+      },
+      success: (res) => {
+        if (res.statusCode === 200) {
+          const data = JSON.parse(res.data)
+          if (data.code === 200) {
+            resolve(data)
+          } else {
+            uni.showToast({ title: data.message || '上传失败', icon: 'none' })
+            reject(data)
+          }
+        } else {
+          uni.showToast({ title: '上传失败', icon: 'none' })
+          reject({ code: res.statusCode })
+        }
+      },
+      fail: (err) => {
+        uni.showToast({ title: '上传失败', icon: 'none' })
+        reject(err)
+      }
+    })
   })
 }
 
