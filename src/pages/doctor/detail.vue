@@ -1,7 +1,7 @@
 <template>
   <view class="detail-container">
     <!-- 返回按钮 -->
-
+    <back-button />
     
     <!-- 医生信息卡片 -->
     <view class="doctor-card">

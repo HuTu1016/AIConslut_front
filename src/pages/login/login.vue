@@ -1,5 +1,7 @@
 <template>
   <view class="login-container">
+    <!-- 返回按钮 -->
+    <back-button />
     <!-- 顶部渐变背景 -->
     <view class="header-bg">
       <view class="bg-circle circle-1"></view>
@@ -17,20 +19,49 @@
 
     <!-- 登录区域 -->
     <view class="login-section">
-      <button 
-        class="login-btn wechat-btn" 
-        open-type="getPhoneNumber"
-        @getphonenumber="handleGetPhoneNumber"
-        :loading="loading"
-        :disabled="loading || !agreed"
-      >
-        <view class="btn-content">
-          <image class="wechat-icon" src="/static/wechat-icon.png" mode="aspectFit" 
-            @error="wechatIconError = true" v-if="!wechatIconError"></image>
-          <text class="btn-icon" v-else>📱</text>
-          <text class="btn-text">微信手机号快捷登录</text>
+      <!-- Tab切换 -->
+      <view class="login-tabs">
+        <view :class="['tab-item', { active: loginMode === 'account' }]" @click="loginMode = 'account'">
+          <text>账号登录</text>
         </view>
-      </button>
+        <view :class="['tab-item', { active: loginMode === 'wechat' }]" @click="loginMode = 'wechat'">
+          <text>微信登录</text>
+        </view>
+      </view>
+
+      <!-- 账号密码登录表单 -->
+      <view v-if="loginMode === 'account'" class="account-form">
+        <view class="form-item">
+          <text class="form-icon">👤</text>
+          <input class="form-input" v-model="username" placeholder="请输入用户名" type="text" />
+        </view>
+        <view class="form-item">
+          <text class="form-icon">🔒</text>
+          <input class="form-input" v-model="password" placeholder="请输入密码" :password="!showPwd" type="text" />
+          <text class="toggle-pwd" @click="showPwd = !showPwd">{{ showPwd ? '🙈' : '👁' }}</text>
+        </view>
+        <button class="login-btn account-btn" @click="handleAccountLogin" :loading="loading" :disabled="loading || !agreed">
+          <text class="btn-text">登 录</text>
+        </button>
+      </view>
+
+      <!-- 微信登录 -->
+      <view v-else class="wechat-section">
+        <button 
+          class="login-btn wechat-btn" 
+          open-type="getPhoneNumber"
+          @getphonenumber="handleGetPhoneNumber"
+          :loading="loading"
+          :disabled="loading || !agreed"
+        >
+          <view class="btn-content">
+            <image class="wechat-icon" src="/static/wechat-icon.png" mode="aspectFit" 
+              @error="wechatIconError = true" v-if="!wechatIconError"></image>
+            <text class="btn-icon" v-else>📱</text>
+            <text class="btn-text">微信手机号快捷登录</text>
+          </view>
+        </button>
+      </view>
 
       <view class="agreement" @click="agreed = !agreed">
         <view :class="['checkbox-custom', { checked: agreed }]">
@@ -53,6 +84,7 @@
 
 <script>
 import { apiLogin, apiGetUserInfo } from '@/utils/request.js'
+import { apiAccountLogin } from '@/utils/request.js'
 import { saveLoginInfo } from '@/utils/store.js'
 import { connectNotifyWs } from '@/utils/notify-ws.js'
 
@@ -61,68 +93,69 @@ export default {
     return {
       loading: false,
       agreed: false,
-      wechatIconError: false
+      wechatIconError: false,
+      loginMode: 'account',
+      username: '',
+      password: '',
+      showPwd: false
     }
   },
   methods: {
-    // 微信手机号授权登录
-    async handleGetPhoneNumber(e) {
-      if (e.detail.errMsg !== 'getPhoneNumber:ok') {
-        uni.showToast({
-          title: '需要授权手机号才能登录',
-          icon: 'none'
-        })
-        return
-      }
-
+    // 账号密码登录
+    async handleAccountLogin() {
       if (!this.agreed) {
-        uni.showToast({
-          title: '请先阅读并同意用户协议',
-          icon: 'none'
-        })
+        uni.showToast({ title: '请先阅读并同意用户协议', icon: 'none' })
         return
       }
-
+      if (!this.username.trim() || !this.password.trim()) {
+        uni.showToast({ title: '请输入用户名和密码', icon: 'none' })
+        return
+      }
       this.loading = true
-
       try {
-        // 获取微信登录code
-        const loginRes = await new Promise((resolve, reject) => {
-          uni.login({
-            provider: 'weixin',
-            success: resolve,
-            fail: reject
-          })
-        })
-
-        // 调用后端登录接口
-        const res = await apiLogin(loginRes.code, e.detail.code)
-
-        // 保存登录信息（后端返回 { token, userInfo }）
+        const res = await apiAccountLogin(this.username.trim(), this.password.trim())
         saveLoginInfo(res.data)
-
-        // 登录成功后连接通知 WebSocket
         if (res.data?.userInfo?.id) {
           connectNotifyWs(res.data.userInfo.id)
         }
-
-        uni.showToast({
-          title: '登录成功',
-          icon: 'success'
-        })
-
+        uni.showToast({ title: '登录成功', icon: 'success' })
         setTimeout(() => {
-          uni.reLaunch({
-            url: '/pages/index/index'
-          })
+          uni.reLaunch({ url: '/pages/index/index' })
         }, 1000)
-
       } catch (err) {
         console.error('登录失败:', err)
-        uni.showToast({
-          title: err.message || '登录失败',
-          icon: 'none'
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // 微信手机号授权登录
+    async handleGetPhoneNumber(e) {
+      if (e.detail.errMsg !== 'getPhoneNumber:ok') {
+        uni.showToast({ title: '需要授权手机号才能登录', icon: 'none' })
+        return
+      }
+      if (!this.agreed) {
+        uni.showToast({ title: '请先阅读并同意用户协议', icon: 'none' })
+        return
+      }
+      this.loading = true
+      try {
+        const loginRes = await new Promise((resolve, reject) => {
+          uni.login({ provider: 'weixin', success: resolve, fail: reject })
         })
+        const res = await apiLogin(loginRes.code, e.detail.code)
+        saveLoginInfo(res.data)
+        if (res.data?.userInfo?.id) {
+          connectNotifyWs(res.data.userInfo.id)
+        }
+        uni.showToast({ title: '登录成功', icon: 'success' })
+        setTimeout(() => {
+          uni.reLaunch({ url: '/pages/index/index' })
+        }, 1000)
+      } catch (err) {
+        console.error('登录失败:', err)
+        uni.showToast({ title: err.message || '登录失败', icon: 'none' })
       } finally {
         this.loading = false
       }
@@ -195,7 +228,7 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 140rpx;
+  padding-top: 100rpx;
 
   .logo-wrapper {
     width: 140rpx;
@@ -215,16 +248,16 @@ export default {
   }
 
   .app-name {
-    margin-top: 32rpx;
-    font-size: 48rpx;
+    margin-top: 24rpx;
+    font-size: 44rpx;
     font-weight: 700;
     color: #FFFFFF;
     letter-spacing: 4rpx;
   }
 
   .app-desc {
-    margin-top: 12rpx;
-    font-size: 26rpx;
+    margin-top: 8rpx;
+    font-size: 24rpx;
     color: rgba(255, 255, 255, 0.75);
     letter-spacing: 2rpx;
   }
@@ -232,9 +265,103 @@ export default {
 
 /* 登录区域 */
 .login-section {
-  margin-top: 260rpx;
+  margin-top: 140rpx;
   padding: 0 50rpx;
+}
 
+/* Tab切换 */
+.login-tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 40rpx;
+  gap: 60rpx;
+
+  .tab-item {
+    padding: 10rpx 0;
+    font-size: 30rpx;
+    color: #8A96A5;
+    border-bottom: 4rpx solid transparent;
+    transition: all 0.3s;
+
+    &.active {
+      color: #0F5C8E;
+      font-weight: 600;
+      border-bottom-color: #1A8A7D;
+    }
+  }
+}
+
+/* 账号登录表单 */
+.account-form {
+  .form-item {
+    display: flex;
+    align-items: center;
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    padding: 0 24rpx;
+    margin-bottom: 24rpx;
+    height: 96rpx;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+
+    .form-icon {
+      font-size: 36rpx;
+      margin-right: 16rpx;
+    }
+
+    .form-input {
+      flex: 1;
+      font-size: 28rpx;
+      color: #303133;
+    }
+
+    .toggle-pwd {
+      font-size: 36rpx;
+      padding: 10rpx;
+    }
+  }
+
+  .account-btn {
+    width: 100%;
+    height: 96rpx;
+    background: linear-gradient(135deg, #0F5C8E 0%, #1A8A7D 100%);
+    border-radius: 48rpx;
+    border: none;
+    box-shadow: 0 12rpx 36rpx rgba(26, 138, 125, 0.35);
+    margin-top: 16rpx;
+
+    &::after {
+      border: none;
+    }
+
+    &[disabled] {
+      opacity: 0.6;
+    }
+
+    .btn-text {
+      color: #FFFFFF;
+      font-size: 32rpx;
+      font-weight: 600;
+      letter-spacing: 8rpx;
+    }
+  }
+
+  .register-link {
+    display: flex;
+    justify-content: center;
+    margin-top: 24rpx;
+    font-size: 24rpx;
+    color: #8A96A5;
+
+    .link {
+      color: #0F5C8E;
+      margin-left: 8rpx;
+      font-weight: 500;
+    }
+  }
+}
+
+/* 微信登录 */
+.wechat-section {
   .wechat-btn {
     width: 100%;
     height: 100rpx;
@@ -279,44 +406,44 @@ export default {
       letter-spacing: 2rpx;
     }
   }
+}
 
-  .agreement {
+.agreement {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 36rpx;
+  padding: 10rpx 0;
+
+  .checkbox-custom {
+    width: 32rpx;
+    height: 32rpx;
+    border: 2rpx solid #C0C8D0;
+    border-radius: 8rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 36rpx;
-    padding: 10rpx 0;
+    margin-right: 10rpx;
+    transition: all 0.2s;
 
-    .checkbox-custom {
-      width: 32rpx;
-      height: 32rpx;
-      border: 2rpx solid #C0C8D0;
-      border-radius: 8rpx;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 10rpx;
-      transition: all 0.2s;
-
-      &.checked {
-        background: #1A8A7D;
-        border-color: #1A8A7D;
-      }
-
-      .check-mark {
-        color: #fff;
-        font-size: 20rpx;
-        font-weight: bold;
-      }
+    &.checked {
+      background: #1A8A7D;
+      border-color: #1A8A7D;
     }
 
-    .agreement-text {
-      font-size: 22rpx;
-      color: #8A96A5;
+    .check-mark {
+      color: #fff;
+      font-size: 20rpx;
+      font-weight: bold;
+    }
+  }
 
-      .link {
-        color: #0F5C8E;
-      }
+  .agreement-text {
+    font-size: 22rpx;
+    color: #8A96A5;
+
+    .link {
+      color: #0F5C8E;
     }
   }
 }

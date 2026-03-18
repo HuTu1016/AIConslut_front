@@ -1,6 +1,7 @@
 <template>
   <view class="doctor-list-container">
     <!-- 返回按钮 -->
+    <back-button />
 
     
     <!-- 筛选栏 -->

@@ -1,6 +1,7 @@
 <template>
   <view class="chat-container">
     <!-- 返回按钮 -->
+    <back-button />
 
     
     <!-- 顶部信息 -->

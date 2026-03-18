@@ -1,6 +1,7 @@
 <template>
   <view class="book-container">
     <!-- 返回按钮 -->
+    <back-button />
 
     
     <!-- 医生信息 -->
