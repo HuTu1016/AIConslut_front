@@ -102,7 +102,7 @@ export default {
   onLoad(options) {
     if (options.parentId) {
       this.parentId = parseInt(options.parentId)
-      this.parentName = options.parentName || ''
+      this.parentName = decodeURIComponent(options.parentName || '')
       // 设置导航栏标题
       uni.setNavigationBarTitle({ title: this.parentName || '选择科室' })
     }

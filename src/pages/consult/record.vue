@@ -1,9 +1,5 @@
 <template>
   <view class="record-container">
-    <!-- 返回按钮 -->
-    <back-button />
-
-    
     <!-- 问诊信息 -->
     <view class="header-card">
       <view class="doctor-info">

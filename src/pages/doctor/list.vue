@@ -1,8 +1,5 @@
 <template>
   <view class="doctor-list-container">
-    <!-- 返回按钮 -->
-    <back-button />
-
     
     <!-- 筛选栏 -->
     <scroll-view 
@@ -127,7 +124,7 @@ export default {
       // 导航栏显示父科室名称（如有）
       const title = this.parentName 
         ? this.parentName + ' - 医生列表'
-        : options.deptName + ' - 医生列表'
+        : decodeURIComponent(options.deptName) + ' - 医生列表'
       uni.setNavigationBarTitle({ title })
     }
     this.loadDepartments()

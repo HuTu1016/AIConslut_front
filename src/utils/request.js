@@ -6,7 +6,7 @@
 // ==================== 开发测试配置 ====================
 // 开发模式默认Token（永不过期，用户ID=1）
 // 设置为 true 开启开发模式，会自动设置默认token
-const DEV_MODE = true
+const DEV_MODE = false
 const DEV_TOKEN = 'dev_mock_token_user_1'
 
 // 开发模式下自动设置默认token
@@ -17,7 +17,7 @@ if (DEV_MODE && !uni.getStorageSync('token')) {
 // ==================== 开发测试配置 END ====================
 
 // API基础地址配置
-export const BASE_URL = 'http://192.168.3.95:8084'
+export const BASE_URL = 'http://192.168.3.196:8084'
 
 // 请求超时时间
 const TIMEOUT = 30000
@@ -253,6 +253,19 @@ export function apiLogin(code, phoneCode) {
     url: '/api/v1/user/wechat-login',
     method: 'POST',
     data: { code, phoneCode }
+  })
+}
+
+/**
+ * 账号密码登录
+ * @param {string} username 用户名
+ * @param {string} password 密码
+ */
+export function apiAccountLogin(username, password) {
+  return request({
+    url: '/api/v1/user/login',
+    method: 'POST',
+    data: { username, password }
   })
 }
 

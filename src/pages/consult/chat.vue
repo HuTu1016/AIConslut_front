@@ -1,9 +1,5 @@
 <template>
   <view class="chat-container">
-    <!-- 返回按钮 -->
-    <back-button />
-
-    
     <!-- 顶部信息 -->
     <view class="chat-header">
       <image class="avatar" :src="$resolveImage(doctor.avatarUrl)" mode="aspectFill"></image>

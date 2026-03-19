@@ -1,9 +1,5 @@
 <template>
   <view class="book-container">
-    <!-- 返回按钮 -->
-    <back-button />
-
-    
     <!-- 医生信息 -->
     <view class="doctor-info">
       <image class="avatar" :src="$resolveImage(doctor.avatarUrl)" mode="aspectFill"></image>
